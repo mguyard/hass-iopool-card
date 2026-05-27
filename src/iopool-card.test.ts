@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { HomeAssistant, IopoolCardConfig } from './types';
+import type { HomeAssistant, IopoolCardConfig, ResolvedEntities, DisplayFlags, HassEntity } from './types';
 // Import triggers custom element registration and window.customCards population.
 import { IopoolCard } from './iopool-card';
 
@@ -285,5 +285,249 @@ describe('IopoolCard.render', () => {
     card.setConfig(VALID_CONFIG);
     card.hass = buildMockHass();
     expect(() => (card as unknown as { render: () => unknown }).render()).not.toThrow();
+  });
+
+  it('does not throw when mode is MAINTENANCE (isGrayed path)', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeEntityId = 'sensor.iopool_test_iopool_mode';
+    const hass = buildMockHass({
+      states: {
+        [modeEntityId]: {
+          entity_id: modeEntityId,
+          state: 'MAINTENANCE',
+          attributes: {},
+          last_changed: '',
+          last_updated: '',
+        },
+      },
+    });
+    // Inject resolved entities directly so _displayFlags reads the mode entity.
+    (card as unknown as Record<string, unknown>)._entities = { mode: modeEntityId } satisfies ResolvedEntities;
+    card.hass = hass;
+    expect(() => (card as unknown as { render: () => unknown }).render()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _displayFlags getter
+// ---------------------------------------------------------------------------
+
+// Helpers for direct private-field access (test-only pattern).
+function getFlags(card: IopoolCard): DisplayFlags {
+  return (card as unknown as { _displayFlags: DisplayFlags })._displayFlags;
+}
+
+function setPrivateEntities(card: IopoolCard, entities: ResolvedEntities): void {
+  (card as unknown as Record<string, unknown>)._entities = entities;
+}
+
+function setPrivateHass(card: IopoolCard, hass: HomeAssistant): void {
+  (card as unknown as Record<string, unknown>)._hass = hass;
+}
+
+function makeHassState(entityId: string, state: string, attributes: Record<string, unknown> = {}): HassEntity {
+  return { entity_id: entityId, state, attributes, last_changed: '', last_updated: '' };
+}
+
+describe('IopoolCard._displayFlags', () => {
+  it('returns all-false flags when neither hass nor config is set', () => {
+    const card = new IopoolCard();
+    const flags = getFlags(card);
+    expect(flags.showGauges).toBe(false);
+    expect(flags.showChart).toBe(false);
+    expect(flags.showMode).toBe(false);
+    expect(flags.showPump).toBe(false);
+    expect(flags.showFiltration).toBe(false);
+    expect(flags.showBoost).toBe(false);
+    expect(flags.isGrayed).toBe(false);
+    expect(flags.warningBanner).toBeNull();
+  });
+
+  it('returns warningBanner=maintenance when iopool mode is MAINTENANCE', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    expect(getFlags(card).warningBanner).toBe('maintenance');
+  });
+
+  it('returns warningBanner=initialization when iopool mode is INITIALIZATION', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }));
+    expect(getFlags(card).warningBanner).toBe('initialization');
+  });
+
+  it('returns isGrayed=true for MAINTENANCE mode', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    expect(getFlags(card).isGrayed).toBe(true);
+  });
+
+  it('returns isGrayed=true for INITIALIZATION mode', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }));
+    expect(getFlags(card).isGrayed).toBe(true);
+  });
+
+  it('returns showGauges=false in ACTIVE_WINTER mode', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'ACTIVE_WINTER') } }));
+    expect(getFlags(card).showGauges).toBe(false);
+  });
+
+  it('returns showGauges=false in WINTER (passive) mode', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'WINTER') } }));
+    expect(getFlags(card).showGauges).toBe(false);
+  });
+
+  it('returns showGauges=true in STANDARD mode', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    expect(getFlags(card).showGauges).toBe(true);
+  });
+
+  it('returns showFiltration=true when mode is ACTIVE_WINTER (filtration runs during active winter)', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    const filtId = 'binary_sensor.iopool_test_filtration';
+    setPrivateEntities(card, { mode: modeId, filtration: filtId });
+    setPrivateHass(card, buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'ACTIVE_WINTER'),
+        [filtId]: makeHassState(filtId, 'off'),
+      },
+    }));
+    expect(getFlags(card).showFiltration).toBe(true);
+  });
+
+  it('returns showFiltration=false when mode is WINTER (passive)', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    const filtId = 'binary_sensor.iopool_test_filtration';
+    setPrivateEntities(card, { mode: modeId, filtration: filtId });
+    setPrivateHass(card, buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'WINTER'),
+        [filtId]: makeHassState(filtId, 'off'),
+      },
+    }));
+    expect(getFlags(card).showFiltration).toBe(false);
+  });
+
+  it('returns showFiltration=true in STANDARD mode when filtration entity exists', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    const filtId = 'binary_sensor.iopool_test_filtration';
+    setPrivateEntities(card, { mode: modeId, filtration: filtId });
+    setPrivateHass(card, buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'STANDARD'),
+        [filtId]: makeHassState(filtId, 'off'),
+      },
+    }));
+    expect(getFlags(card).showFiltration).toBe(true);
+  });
+
+  it('returns showBoost=false when mode is MAINTENANCE', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    expect(getFlags(card).showBoost).toBe(false);
+  });
+
+  it('returns showPump=false when mode is WINTER (passive)', () => {
+    const card = new IopoolCard();
+    card.setConfig({ ...VALID_CONFIG, pump_entity: 'switch.pool_pump' });
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'WINTER'),
+        'switch.pool_pump': makeHassState('switch.pool_pump', 'off'),
+      },
+    }));
+    expect(getFlags(card).showPump).toBe(false);
+  });
+
+  it('returns showChart=false when show_chart is false in config', () => {
+    const card = new IopoolCard();
+    card.setConfig({ ...VALID_CONFIG, show_chart: false });
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    expect(getFlags(card).showChart).toBe(false);
+  });
+
+  it('returns showChart=true by default (show_chart not set)', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    setPrivateEntities(card, { mode: modeId });
+    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    expect(getFlags(card).showChart).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _handlePeriodChange
+// ---------------------------------------------------------------------------
+
+describe('IopoolCard._handlePeriodChange', () => {
+  function callPeriodChange(card: IopoolCard, period: number): void {
+    const handler = (
+      card as unknown as { _handlePeriodChange: (ev: CustomEvent) => void }
+    )._handlePeriodChange.bind(card);
+    handler(new CustomEvent('period-change', { detail: period }));
+  }
+
+  it('updates chart_period in _config when called with a valid period', () => {
+    const card = new IopoolCard();
+    card.setConfig(VALID_CONFIG);
+    callPeriodChange(card, 48);
+    const config = (card as unknown as { _config: IopoolCardConfig })._config;
+    expect(config.chart_period).toBe(48);
+  });
+
+  it('preserves all other config fields when updating chart_period', () => {
+    const card = new IopoolCard();
+    card.setConfig({ ...VALID_CONFIG, show_chart: true, debug: true });
+    callPeriodChange(card, 168);
+    const config = (card as unknown as { _config: IopoolCardConfig })._config;
+    expect(config.chart_period).toBe(168);
+    expect(config.show_chart).toBe(true);
+    expect(config.debug).toBe(true);
+    expect(config.device_id).toBe(VALID_CONFIG.device_id);
+  });
+
+  it('does nothing when _config is not set', () => {
+    const card = new IopoolCard();
+    // Should not throw when config is not set.
+    expect(() => callPeriodChange(card, 24)).not.toThrow();
   });
 });
