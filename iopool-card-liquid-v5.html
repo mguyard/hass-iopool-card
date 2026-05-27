@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iopool Card · Liquid v5</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --io-primary: #17817A;
+    --io-primary-dark: #0f5d57;
+    --io-eco: #43D1CD;
+    --io-sharing: #4BCFFA;
+    --io-treatments: #42BDAA;
+    --io-green: #7ED321;
+    --io-orange: #F5A623;
+    --io-red: #D0021B;
+
+    --bg: #F4F8F7;
+    --card-bg: #ffffff;
+    --card-bg-alt: #F4F8F7;
+    --surface: rgba(23, 129, 122, 0.04);
+    --surface-strong: rgba(23, 129, 122, 0.08);
+    --text: #1a2826;
+    --text-soft: #5e6f6d;
+    --text-mute: #8a9a98;
+    --divider: rgba(23, 129, 122, 0.12);
+    --gauge-bg: #EAF4F2;
+    --gauge-bg-deep: #DBEAE7;
+    --shadow-sm: 0 1px 3px rgba(23, 129, 122, 0.08), 0 2px 8px rgba(23, 129, 122, 0.06);
+    --shadow-md: 0 4px 16px rgba(23, 129, 122, 0.1), 0 1px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  body.dark {
+    --bg: #0a1413;
+    --card-bg: #131e1c;
+    --card-bg-alt: #0f1817;
+    --surface: rgba(255,255,255,0.04);
+    --surface-strong: rgba(255,255,255,0.07);
+    --text: #e8f0ee;
+    --text-soft: #b0c2bf;
+    --text-mute: #7a8d8a;
+    --divider: rgba(255,255,255,0.08);
+    --gauge-bg: #1a2625;
+    --gauge-bg-deep: #0f1817;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.4);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.5), 0 1px 4px rgba(0,0,0,.3);
+  }
+
+  body {
+    font-family: 'Montserrat', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .3s, color .3s;
+  }
+
+  /* MDI svg icon styling */
+  .mdi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    vertical-align: middle;
+    color: currentColor;
+    flex-shrink: 0;
+  }
+  .mdi svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+  }
+
+  /* TOOLBAR */
+  .toolbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--divider);
+    padding: 12px 20px;
+    backdrop-filter: blur(20px);
+  }
+  .toolbar-row {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center; justify-content: space-between;
+  }
+  .toolbar h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .toolbar h1 .accent { color: var(--io-primary); }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; }
+  .control-group {
+    display: flex; gap: 3px;
+    background: var(--surface); padding: 3px;
+    border-radius: 9px;
+  }
+  .control-label {
+    font-size: 10px; color: var(--text-mute);
+    text-transform: uppercase; font-weight: 700;
+    letter-spacing: 0.05em; padding: 0 6px;
+    align-self: center;
+  }
+  .pill {
+    border: none; background: transparent;
+    color: var(--text); padding: 5px 10px;
+    border-radius: 6px; font-size: 11px;
+    font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: all .2s;
+  }
+  .pill:hover { background: var(--surface-strong); }
+  .pill.active { background: var(--io-primary); color: #fff; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 32px 16px; }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: 28px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    transition: background .3s;
+  }
+
+  .header {
+    padding: 22px 24px 18px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 1px solid var(--divider);
+  }
+  .header-title h2 {
+    font-size: 22px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.025em; line-height: 1.1;
+  }
+  .header-title .sub {
+    font-size: 12px; color: var(--text-soft);
+    font-weight: 500; margin-top: 4px;
+  }
+  .header-badges { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .badge {
+    padding: 5px 10px 5px 8px;
+    border-radius: 100px;
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .badge .mdi { font-size: 14px; }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.ok { background: rgba(126, 211, 33, 0.15); color: #4d8a0e; }
+  body.dark .badge.ok { color: #9EE040; }
+  .badge.warn { background: rgba(245, 166, 35, 0.18); color: #9c6a14; }
+  body.dark .badge.warn { color: #F5A623; }
+  .badge.err { background: rgba(208, 2, 27, 0.13); color: #a3001a; }
+  body.dark .badge.err { color: #ff5e5e; }
+  .badge.mode { background: var(--surface-strong); color: var(--io-primary); }
+
+  .maint-warning {
+    margin: 14px 24px 0;
+    padding: 10px 14px;
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid rgba(245, 166, 35, 0.3);
+    border-radius: 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: #9c6a14; font-weight: 600;
+  }
+  body.dark .maint-warning { color: #F5A623; }
+  .maint-warning .mdi { font-size: 18px; flex-shrink: 0; }
+
+  /* === LIQUID GAUGES === */
+  .gauges {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 20px;
+  }
+  .gauge {
+    position: relative;
+    aspect-ratio: 0.92;
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--gauge-bg);
+    border: 1px solid var(--divider);
+    cursor: pointer;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .gauge:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .gauge .top-label {
+    position: absolute; top: 14px; left: 14px;
+    font-size: 10px; color: var(--text-mute);
+    font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; z-index: 5;
+  }
+  .gauge .status-tag {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 9px; font-weight: 700;
+    padding: 3px 7px; border-radius: 100px;
+    z-index: 5; backdrop-filter: blur(8px);
+  }
+  .gauge .status-tag.ok { background: rgba(126, 211, 33, 0.25); color: #2d5a0a; }
+  body.dark .gauge .status-tag.ok { background: rgba(126, 211, 33, 0.25); color: #b5ff5c; }
+  .gauge .status-tag.warn { background: rgba(245, 166, 35, 0.3); color: #5a3d0a; }
+  body.dark .gauge .status-tag.warn { background: rgba(245, 166, 35, 0.3); color: #ffc870; }
+  .gauge .status-tag.bad { background: rgba(208, 2, 27, 0.25); color: #6a000f; }
+  body.dark .gauge .status-tag.bad { background: rgba(208, 2, 27, 0.35); color: #ff8a8a; }
+  .gauge .value-wrap {
+    position: absolute; bottom: 14px; left: 14px; right: 14px;
+    z-index: 5; line-height: 1;
+  }
+  .gauge .value {
+    font-size: 26px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.03em;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8), 0 0 12px rgba(255,255,255,0.6);
+  }
+  body.dark .gauge .value {
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.6);
+  }
+  .gauge .unit { font-size: 13px; font-weight: 600; opacity: 0.65; margin-left: 2px; }
+  .gauge .target {
+    font-size: 9px;
+    color: var(--text);
+    opacity: 0.75;
+    font-weight: 700;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,0.7);
+  }
+  body.dark .gauge .target {
+    opacity: 0.85;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7);
+  }
+
+  .liquid-svg {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .section {
+    padding: 0 20px 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  .mode-row {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .mode-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--io-primary), var(--io-primary-dark));
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(23, 129, 122, 0.25);
+  }
+  .mode-icon .mdi { font-size: 22px; }
+  .mode-info { flex: 1; min-width: 0; }
+  .mode-info .lbl {
+    font-size: 10px; color: var(--text-mute);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  }
+  .mode-info .val { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .mode-segments {
+    display: flex; gap: 4px;
+    background: var(--card-bg-alt);
+    padding: 3px; border-radius: 12px;
+  }
+  body.dark .mode-segments { background: rgba(0,0,0,0.2); }
+  .mode-seg {
+    width: 34px; height: 34px;
+    border-radius: 9px; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-mute);
+    transition: all .2s; border: none;
+  }
+  .mode-seg .mdi { font-size: 18px; }
+  .mode-seg.active {
+    background: var(--io-primary); color: #fff;
+    box-shadow: 0 2px 6px rgba(23, 129, 122, 0.3);
+  }
+  .mode-seg:hover:not(.active) { color: var(--io-primary); }
+
+  .pump-row {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    border: 1px solid transparent;
+    transition: all .3s;
+  }
+  .pump-row.on {
+    background: linear-gradient(135deg, rgba(126, 211, 33, 0.1), rgba(67, 209, 205, 0.06));
+    border-color: rgba(126, 211, 33, 0.25);
+  }
+  .pump-row.off {
+    background: linear-gradient(135deg, rgba(208, 2, 27, 0.08), rgba(208, 2, 27, 0.04));
+    border-color: rgba(208, 2, 27, 0.25);
+  }
+  .pump-icon-wrap {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--surface-strong);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .pump-row.on .pump-icon-wrap { background: rgba(126, 211, 33, 0.2); color: #4d8a0e; }
+  body.dark .pump-row.on .pump-icon-wrap { color: #9EE040; }
+  .pump-row.off .pump-icon-wrap { background: rgba(208, 2, 27, 0.18); color: #a3001a; }
+  body.dark .pump-row.off .pump-icon-wrap { color: #ff6b6b; }
+  .pump-icon-wrap .mdi { font-size: 22px; }
+  .pump-info { flex: 1; min-width: 0; }
+  .pump-info .lbl {
+    font-size: 10px; color: var(--text-mute);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  }
+  .pump-info .val { font-size: 14px; font-weight: 700; margin-top: 2px; }
+  .pump-row.on .pump-info .val { color: #4d8a0e; }
+  body.dark .pump-row.on .pump-info .val { color: #9EE040; }
+  .pump-row.off .pump-info .val { color: #a3001a; }
+  body.dark .pump-row.off .pump-info .val { color: #ff6b6b; }
+
+  .toggle {
+    width: 44px; height: 26px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 100px;
+    position: relative; cursor: pointer;
+    transition: background .3s; flex-shrink: 0;
+  }
+  body.dark .toggle { background: rgba(255,255,255,0.12); }
+  .toggle::before {
+    content: ''; position: absolute;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: left .3s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle.on { background: #7ED321; }
+  .toggle.on::before { left: 21px; }
+
+  .filt-block {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 14px 16px;
+  }
+  .filt-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .filt-title {
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .filt-title .mdi { font-size: 16px; color: var(--io-primary); }
+  .filt-percent {
+    font-size: 16px; font-weight: 800;
+    color: #4d8a0e; letter-spacing: -0.02em;
+  }
+  body.dark .filt-percent { color: #9EE040; }
+  .filt-bar {
+    height: 8px; background: var(--gauge-bg);
+    border-radius: 100px; overflow: hidden;
+    margin-bottom: 8px;
+  }
+  body.dark .filt-bar { background: rgba(0,0,0,0.25); }
+  .filt-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4BCFFA, #7ED321);
+    border-radius: 100px;
+    transition: width .8s ease;
+  }
+  .filt-meta {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--text-mute); font-weight: 500;
+  }
+
+  .boost-block {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 12px 14px;
+  }
+  .boost-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .boost-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700;
+  }
+  .boost-title .mdi { font-size: 16px; color: var(--io-primary); }
+  .boost-active-info {
+    font-size: 11px; font-weight: 700;
+    color: var(--io-primary); display: none;
+  }
+  .boost-active-info.visible { display: block; }
+  .boost-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  }
+  .boost-btn {
+    height: 32px; border-radius: 9px;
+    background: var(--card-bg-alt);
+    border: 1px solid var(--divider);
+    color: var(--text-soft); font-weight: 700;
+    font-size: 11px; cursor: pointer;
+    transition: all .2s; font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+  }
+  body.dark .boost-btn { background: rgba(255,255,255,0.04); }
+  .boost-btn .mdi { font-size: 16px; }
+  .boost-btn:hover { border-color: var(--io-primary); color: var(--io-primary); }
+  .boost-btn.active {
+    background: linear-gradient(135deg, var(--io-primary), var(--io-primary-dark));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 2px 8px rgba(23, 129, 122, 0.3);
+  }
+  .boost-countdown-bar {
+    margin-top: 10px; height: 4px;
+    background: var(--gauge-bg);
+    border-radius: 100px; overflow: hidden;
+    display: none;
+  }
+  body.dark .boost-countdown-bar { background: rgba(0,0,0,0.25); }
+  .boost-countdown-bar.visible { display: block; }
+  .boost-cd-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--io-primary), var(--io-sharing));
+    border-radius: 100px; width: 65%;
+    animation: cdPulse 2s ease-in-out infinite;
+  }
+  @keyframes cdPulse {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
+  }
+
+  .chart-block {
+    background: var(--surface);
+    border-radius: 18px;
+    padding: 14px 16px 12px;
+  }
+  .chart-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .chart-title {
+    font-size: 11px; color: var(--text-mute);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .chart-title .mdi { font-size: 14px; color: var(--io-primary); }
+  .chart-period-toggle {
+    display: flex; gap: 2px;
+    background: var(--card-bg-alt);
+    padding: 2px; border-radius: 8px;
+  }
+  body.dark .chart-period-toggle { background: rgba(0,0,0,0.25); }
+  .chart-period-btn {
+    border: none; background: transparent;
+    color: var(--text-mute); font-size: 10px;
+    font-weight: 700; padding: 4px 8px;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+  }
+  .chart-period-btn.active {
+    background: var(--card-bg); color: var(--io-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  body.dark .chart-period-btn.active { background: rgba(255,255,255,0.1); }
+  .chart-value {
+    font-size: 26px; font-weight: 800;
+    letter-spacing: -0.03em; margin-top: 2px;
+  }
+  .chart-value .unit { font-size: 13px; opacity: 0.65; font-weight: 600; margin-left: 2px; }
+  .chart-svg-wrap { position: relative; margin: 12px 0 8px; }
+  .chart-svg { width: 100%; height: 130px; display: block; cursor: crosshair; }
+  .chart-svg .axis-line { stroke: var(--divider); stroke-width: 1; }
+  .chart-svg .axis-label {
+    fill: var(--text-mute); font-size: 9px;
+    font-weight: 600; font-family: 'Montserrat', sans-serif;
+  }
+  .chart-svg .grid-line {
+    stroke: var(--divider); stroke-width: 1;
+    stroke-dasharray: 2 3; opacity: 0.5;
+  }
+  .chart-svg .data-line {
+    fill: none; stroke: var(--io-treatments);
+    stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .chart-svg .data-area { fill: url(#area-grad); }
+  .chart-hover-line {
+    stroke: var(--io-primary); stroke-width: 1.2;
+    stroke-dasharray: 3 3; display: none;
+  }
+  .chart-hover-dot {
+    fill: var(--io-primary); stroke: var(--card-bg);
+    stroke-width: 2.5; r: 5; display: none;
+  }
+  .chart-tooltip {
+    position: absolute; background: var(--text); color: var(--card-bg);
+    padding: 8px 11px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+    pointer-events: none; display: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    z-index: 10; transform: translate(-50%, -110%);
+  }
+  .chart-tooltip::after {
+    content: ''; position: absolute;
+    bottom: -4px; left: 50%; margin-left: -4px;
+    width: 8px; height: 8px;
+    background: var(--text); transform: rotate(45deg);
+  }
+  .chart-tooltip .tt-val { font-size: 14px; font-weight: 800; color: #9EE040; }
+  .chart-tooltip .tt-date { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+  .chart-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px; padding-top: 10px;
+    border-top: 1px solid var(--divider); margin-top: 6px;
+  }
+  .stat { text-align: center; }
+  .stat .l {
+    font-size: 9px; color: var(--text-mute);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  }
+  .stat .v {
+    font-size: 13px; font-weight: 800;
+    margin-top: 2px; letter-spacing: -0.01em;
+  }
+  .stat .d { font-size: 9px; color: var(--text-mute); font-weight: 500; margin-top: 1px; }
+
+  .opacity-half { opacity: 0.45; pointer-events: none; }
+
+  .notes {
+    max-width: 720px; margin: 50px auto 30px; padding: 28px;
+    background: var(--card-bg); border-radius: 22px;
+    box-shadow: var(--shadow-sm);
+  }
+  .notes h2 { font-size: 16px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.02em; }
+  .notes h3 {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--io-primary);
+    margin: 18px 0 8px; font-weight: 700;
+  }
+  .notes p, .notes li { font-size: 13px; line-height: 1.6; color: var(--text-soft); }
+  .notes ul { padding-left: 20px; }
+  .notes li { margin-bottom: 4px; }
+  .notes strong { color: var(--text); font-weight: 700; }
+  .notes code {
+    background: var(--surface-strong);
+    padding: 2px 6px; border-radius: 5px;
+    font-family: 'SF Mono', monospace; font-size: 12px;
+    color: var(--io-primary);
+  }
+</style>
+</head>
+<body>
+
+<!-- Inline SVG sprite for all MDI icons used. Each <symbol> uses the exact path from the official MDI library. -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <!-- mdi:pool -->
+  <symbol id="mdi-pool" viewBox="0 0 24 24"><path d="M2 15C3.33 15 3.33 16 4.67 16C6 16 6 15 7.33 15S8.67 16 10 16C11.33 16 11.33 15 12.67 15S14 16 15.33 16C16.67 16 16.67 15 18 15S19.33 16 20.67 16C22 16 22 15 23.33 15V13C22 13 22 14 20.67 14C19.33 14 19.33 13 18 13S16.67 14 15.33 14C14 14 14 13 12.67 13S11.33 14 10 14C8.67 14 8.67 13 7.33 13S6 14 4.67 14C3.33 14 3.33 13 2 13V15M2 19C3.33 19 3.33 20 4.67 20C6 20 6 19 7.33 19S8.67 20 10 20C11.33 20 11.33 19 12.67 19S14 20 15.33 20C16.67 20 16.67 19 18 19S19.33 20 20.67 20C22 20 22 19 23.33 19V17C22 17 22 18 20.67 18C19.33 18 19.33 17 18 17S16.67 18 15.33 18C14 18 14 17 12.67 17S11.33 18 10 18C8.67 18 8.67 17 7.33 17S6 18 4.67 18C3.33 18 3.33 17 2 17V19M10 6.05C10 6.66 10.45 7 11 7H13C13.55 7 14 6.66 14 6.05V5C14 4.45 14.45 4 15 4S16 4.45 16 5V12.34C16.62 12.18 17.39 12 18 12V5C18 3.34 16.66 2 15 2S12 3.34 12 5H10C10 3.34 8.66 2 7 2S4 3.34 4 5V12C4.61 12 5.39 12.18 6 12.34V5C6 4.45 6.45 4 7 4S8 4.45 8 5V6.05Z"/></symbol>
+  <!-- mdi:snowflake -->
+  <symbol id="mdi-snowflake" viewBox="0 0 24 24"><path d="M21.94,11H19L20.5,9.5L19.08,8.08L16.17,11H13V7.83L15.92,4.92L14.5,3.5L13,5V2.06H11V5L9.5,3.5L8.08,4.92L11,7.83V11H7.83L4.92,8.08L3.5,9.5L5,11H2.06V13H5L3.5,14.5L4.92,15.92L7.83,13H11V16.17L8.08,19.08L9.5,20.5L11,19V21.94H13V19L14.5,20.5L15.92,19.08L13,16.17V13H16.17L19.08,15.92L20.5,14.5L19,13H21.94V11Z"/></symbol>
+  <!-- mdi:white-balance-sunny -->
+  <symbol id="mdi-sunny" viewBox="0 0 24 24"><path d="M3.55,18.54L4.96,19.95L6.76,18.16L5.34,16.74M11,22.45C11.32,22.45 13,22.45 13,22.45V19.5H11M12,5.5A6,6 0 0,0 6,11.5A6,6 0 0,0 12,17.5A6,6 0 0,0 18,11.5C18,8.18 15.31,5.5 12,5.5M20,12.5H23V10.5H20M17.24,18.16L19.04,19.95L20.45,18.54L18.66,16.74M20.45,4.46L19.04,3.05L17.24,4.84L18.66,6.26M13,0.55H11V3.5H13M4,10.5H1V12.5H4M6.76,4.84L4.96,3.05L3.55,4.46L5.34,6.26L6.76,4.84Z"/></symbol>
+  <!-- mdi:sun-snowflake-variant -->
+  <symbol id="mdi-sun-snowflake" viewBox="0 0 24 24"><path d="M12 7C9.24 7 7 9.24 7 12S9.24 17 12 17 17 14.76 17 12 14.76 7 12 7M12 0L9.5 2.5 12 5 14.5 2.5 12 0M12 19L9.5 21.5 12 24 14.5 21.5 12 19M5.6 18.4L3.5 20.5 3.6 21.6 5.7 21.5 8.5 18.7 7.1 17.3 5.6 18.4M16.9 6.7L18.4 5.6 20.5 3.5 21.6 3.6 21.5 5.7 18.7 8.5 17.3 7.1 16.9 6.7M5.6 5.6L8.4 8.4 7 9.8 4.2 7 4.3 5.7 5.6 5.6M19.7 21.5L21.6 21.6 21.5 19.7 18.7 16.9 17.3 18.3 19.7 21.5M19 11H24V13H19V11M0 11H5V13H0V11Z"/></symbol>
+  <!-- mdi:wrench -->
+  <symbol id="mdi-wrench" viewBox="0 0 24 24"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></symbol>
+  <!-- mdi:water-pump -->
+  <symbol id="mdi-water-pump" viewBox="0 0 24 24"><path d="M19,15L17,17L15,15V13H10.83C10.42,14.17 9.31,15 8,15A3,3 0 0,1 5,12A3,3 0 0,1 8,9C9.31,9 10.42,9.83 10.83,11H13V7H11V5H17V3L19,5V3H21V11H19V7H15V13H17V11L19,13H22V15H19M8,11A1,1 0 0,0 7,12A1,1 0 0,0 8,13A1,1 0 0,0 9,12A1,1 0 0,0 8,11Z"/></symbol>
+  <!-- mdi:water-pump-off -->
+  <symbol id="mdi-water-pump-off" viewBox="0 0 24 24"><path d="M2,5.27L3.28,4L20,20.72L18.73,22L13.73,17H10.83C10.42,18.17 9.31,19 8,19A3,3 0 0,1 5,16A3,3 0 0,1 8,13C9.31,13 10.42,13.83 10.83,15H11.73L9.73,13H2V11H7.73L5.73,9H4V7.27L2,5.27M8,15A1,1 0 0,0 7,16A1,1 0 0,0 8,17A1,1 0 0,0 9,16A1,1 0 0,0 8,15M22,7V11H19V13H22V15H20V13L19,12.27L17.27,11H19V9H13.27L11.27,7H22M21,3V5L19,7V5L17,3H21Z"/></symbol>
+  <!-- mdi:filter-variant -->
+  <symbol id="mdi-filter" viewBox="0 0 24 24"><path d="M6,13H18V11H6M3,6V8H21V6M10,18H14V16H10V18Z"/></symbol>
+  <!-- mdi:plus-box-multiple (boost) -->
+  <symbol id="mdi-boost" viewBox="0 0 24 24"><path d="M13,2L4.09,12.97L3.75,13.38C3.48,13.7 3.28,14.07 3.15,14.47C3.08,14.68 3.03,14.9 3.01,15.13C3,15.17 3,15.21 3,15.25C3,16.21 3.79,17 4.75,17H10V23L13.07,23C13.58,23 14,22.58 14,22.07V17H19.5C20.6,17 21.5,16.1 21.5,15C21.5,14.3 21.13,13.66 20.55,13.32L13,2Z"/></symbol>
+  <!-- mdi:timer-off-outline (stop boost) -->
+  <symbol id="mdi-timer-stop" viewBox="0 0 24 24"><path d="M22.11 21.46L2.39 1.73 1.11 3L4.27 6.16C3.45 7.5 3 9 3 10.5V11C3 13.94 4.69 16.55 7.18 17.82C6.43 18.5 6 19.45 6 20.5C6 21.74 6.72 22.79 7.76 23.32C8.34 23.74 9.04 24 9.81 24H14.19C16.31 24 18 22.31 18 20.19V20.06C20.31 18.88 22 16.66 22 13.94V12.65C22 11.93 21.91 11.23 21.73 10.55L20.96 11.83 22.11 21.46M14.5 2C15.61 2 16.5 2.89 16.5 4S15.61 6 14.5 6H9.5C8.39 6 7.5 5.11 7.5 4S8.39 2 9.5 2H14.5Z"/></symbol>
+  <!-- mdi:emoticon-cool-outline (action OK) -->
+  <symbol id="mdi-cool" viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M5,7C5,8.4 5.36,9.71 6,10.83V14A2,2 0 0,0 8,16H10A2,2 0 0,0 12,14H12A2,2 0 0,0 14,16H16A2,2 0 0,0 18,14V10.83C18.63,9.71 19,8.4 19,7H17C17,7 17,9 15,9C13,9 13,7 13,7H11C11,7 11,9 9,9C7,9 7,7 7,7H5M8,16H10V14H8V16M14,16H16V14H14V16M9,18A1,1 0 0,0 8,19A1,1 0 0,0 9,20H15A1,1 0 0,0 16,19A1,1 0 0,0 15,18H9Z"/></symbol>
+  <!-- mdi:alert-circle (action required) -->
+  <symbol id="mdi-alert" viewBox="0 0 24 24"><path d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></symbol>
+  <!-- mdi:thermometer (chart title) -->
+  <symbol id="mdi-thermo" viewBox="0 0 24 24"><path d="M15,13V5A3,3 0 0,0 12,2A3,3 0 0,0 9,5V13A5,5 0 1,0 15,13M12,4A1,1 0 0,1 13,5V8H11V5A1,1 0 0,1 12,4Z"/></symbol>
+</svg>
+
+<div class="toolbar">
+  <div class="toolbar-row">
+    <h1>iopool · <span class="accent">Liquid v5</span></h1>
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Thème</span>
+        <button class="pill active" id="theme-light" onclick="setTheme('light')">Clair</button>
+        <button class="pill" id="theme-dark" onclick="setTheme('dark')">Sombre</button>
+      </div>
+      <div class="control-group">
+        <span class="control-label">Mode</span>
+        <button class="pill active" data-mode="standard" onclick="setMode('standard')">Standard</button>
+        <button class="pill" data-mode="active-winter" onclick="setMode('active-winter')">Hiv. actif</button>
+        <button class="pill" data-mode="passive-winter" onclick="setMode('passive-winter')">Hiv. passif</button>
+        <button class="pill" data-mode="maintenance" onclick="setMode('maintenance')">Maintenance</button>
+      </div>
+      <div class="control-group">
+        <span class="control-label">État</span>
+        <button class="pill active" data-state="ok" onclick="setState('ok')">Normal</button>
+        <button class="pill" data-state="phbad" onclick="setState('phbad')">pH bas</button>
+        <button class="pill" data-state="boost" onclick="setState('boost')">Boost</button>
+        <button class="pill" data-state="pumpoff" onclick="setState('pumpoff')">Pompe off</button>
+        <button class="pill" data-state="unavail" onclick="setState('unavail')">Indispo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <div class="header-title">
+        <h2 id="pool-name">Bazemont</h2>
+        <div class="sub">Gestion de votre bassin</div>
+      </div>
+      <div class="header-badges">
+        <span class="badge mode" id="mode-badge">
+          <span class="mdi" id="mode-badge-icon"><svg><use href="#mdi-sunny"/></svg></span>
+          <span id="mode-badge-text">Standard</span>
+        </span>
+        <span class="badge ok" id="action-badge">
+          <span class="mdi"><svg><use href="#mdi-cool"/></svg></span>
+          <span>Tout va bien</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="maint-warning" id="maint-warn" style="display:none">
+      <span class="mdi"><svg><use href="#mdi-alert"/></svg></span>
+      <span>Mode maintenance · données potentiellement obsolètes</span>
+    </div>
+
+    <div class="gauges" id="gauges">
+      <div class="gauge" data-gauge="temp">
+        <span class="top-label">Temp.</span>
+        <span class="status-tag ok" id="temp-tag">Idéal</span>
+        <svg class="liquid-svg" id="svg-temp" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs></defs>
+        </svg>
+        <div class="value-wrap">
+          <div><span class="value">26,9</span><span class="unit">°C</span></div>
+          <div class="target">Cible 27°C</div>
+        </div>
+      </div>
+
+      <div class="gauge" data-gauge="ph">
+        <span class="top-label">pH</span>
+        <span class="status-tag ok" id="ph-tag">Idéal</span>
+        <svg class="liquid-svg" id="svg-ph" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs></defs>
+        </svg>
+        <div class="value-wrap">
+          <div><span class="value" id="ph-val">7,4</span></div>
+          <div class="target">Cible 7,4</div>
+        </div>
+      </div>
+
+      <div class="gauge" data-gauge="orp">
+        <span class="top-label">ORP</span>
+        <span class="status-tag ok">Idéal</span>
+        <svg class="liquid-svg" id="svg-orp" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <defs></defs>
+        </svg>
+        <div class="value-wrap">
+          <div><span class="value">684</span><span class="unit">mV</span></div>
+          <div class="target">Cible 725 mV</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="mode-row" id="mode-row">
+        <div class="mode-icon" id="mode-main-icon">
+          <span class="mdi" id="mode-main-icon-i"><svg><use href="#mdi-sunny"/></svg></span>
+        </div>
+        <div class="mode-info">
+          <div class="lbl">Mode filtration</div>
+          <div class="val" id="mode-name">Standard</div>
+        </div>
+        <div class="mode-segments">
+          <button class="mode-seg active" data-mode-seg="standard" title="Standard">
+            <span class="mdi"><svg><use href="#mdi-sunny"/></svg></span>
+          </button>
+          <button class="mode-seg" data-mode-seg="active-winter" title="Hivernage actif">
+            <span class="mdi"><svg><use href="#mdi-sun-snowflake"/></svg></span>
+          </button>
+          <button class="mode-seg" data-mode-seg="passive-winter" title="Hivernage passif">
+            <span class="mdi"><svg><use href="#mdi-snowflake"/></svg></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="pump-row on" id="pump-row">
+        <div class="pump-icon-wrap">
+          <span class="mdi" id="pump-icon-i"><svg><use href="#mdi-water-pump"/></svg></span>
+        </div>
+        <div class="pump-info">
+          <div class="lbl">Pompe piscine</div>
+          <div class="val" id="pump-val">Allumée</div>
+        </div>
+        <div class="toggle on" id="pump-toggle"></div>
+      </div>
+
+      <div class="filt-block" id="filt-block">
+        <div class="filt-head">
+          <div class="filt-title">
+            <span class="mdi"><svg><use href="#mdi-filter"/></svg></span>
+            Filtration journalière
+          </div>
+          <span class="filt-percent">137%</span>
+        </div>
+        <div class="filt-bar"><div class="filt-fill" style="width: 100%"></div></div>
+        <div class="filt-meta">
+          <span>Effectuée 08:12:00 · cible 06:00:00</span>
+          <span>iopool: 07:00:00</span>
+        </div>
+      </div>
+
+      <div class="boost-block" id="boost-block">
+        <div class="boost-head">
+          <div class="boost-title">
+            <span class="mdi"><svg><use href="#mdi-boost"/></svg></span>
+            Boost
+          </div>
+          <span class="boost-active-info" id="boost-active">Actif · 1h 25min restantes</span>
+        </div>
+        <div class="boost-grid">
+          <button class="boost-btn active" data-boost="none" title="Stop / Aucun boost">
+            <span class="mdi"><svg><use href="#mdi-timer-stop"/></svg></span>
+          </button>
+          <button class="boost-btn" data-boost="1h">1h</button>
+          <button class="boost-btn" data-boost="2h">2h</button>
+          <button class="boost-btn" data-boost="4h">4h</button>
+          <button class="boost-btn" data-boost="8h">8h</button>
+          <button class="boost-btn" data-boost="24h">24h</button>
+        </div>
+        <div class="boost-countdown-bar" id="boost-cd"><div class="boost-cd-fill"></div></div>
+      </div>
+
+      <div class="chart-block" id="chart-block">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">
+              <span class="mdi"><svg><use href="#mdi-thermo"/></svg></span>
+              Température
+            </div>
+            <div class="chart-value">26,9<span class="unit">°C</span></div>
+          </div>
+          <div class="chart-period-toggle">
+            <button class="chart-period-btn" data-period="24">24h</button>
+            <button class="chart-period-btn" data-period="48">48h</button>
+            <button class="chart-period-btn active" data-period="96">96h</button>
+            <button class="chart-period-btn" data-period="7d">7j</button>
+          </div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="chart-svg" id="chart-svg" viewBox="0 0 360 130" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="area-grad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#42BDAA" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#42BDAA" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <text x="2" y="20" class="axis-label">28°</text>
+            <text x="2" y="55" class="axis-label">23°</text>
+            <text x="2" y="90" class="axis-label">18°</text>
+            <text x="2" y="115" class="axis-label">13°</text>
+            <line x1="28" y1="18" x2="358" y2="18" class="grid-line"/>
+            <line x1="28" y1="52" x2="358" y2="52" class="grid-line"/>
+            <line x1="28" y1="86" x2="358" y2="86" class="grid-line"/>
+            <line x1="28" y1="113" x2="358" y2="113" class="axis-line"/>
+            <g id="chart-data"></g>
+            <line class="chart-hover-line" id="hover-line" x1="0" y1="14" x2="0" y2="113"/>
+            <circle class="chart-hover-dot" id="hover-dot" cx="0" cy="0"/>
+            <g id="x-labels"></g>
+          </svg>
+          <div class="chart-tooltip" id="chart-tooltip">
+            <div class="tt-val">26.9°C</div>
+            <div class="tt-date">26 mai · 18:30</div>
+          </div>
+        </div>
+        <div class="chart-stats">
+          <div class="stat"><div class="l">Min</div><div class="v">13,2°C</div><div class="d">sam. 23 · 00:00</div></div>
+          <div class="stat"><div class="l">Moy</div><div class="v">24,9°C</div><div class="d">96h</div></div>
+          <div class="stat"><div class="l">Max</div><div class="v">27,5°C</div><div class="d">mar. 26 · 19:58</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>v5 — icônes inline</h2>
+  <p>Les icônes sont désormais en <strong>SVG inline</strong> dans le HTML via un <code>&lt;svg&gt;</code> de symboles + <code>&lt;use href="#mdi-xxx"/&gt;</code>. Plus aucune dépendance externe, garantie de fonctionnement partout. Les paths sont copiés du dépôt officiel <code>@mdi/svg</code>.</p>
+  <p>Dans la carte finale Home Assistant, on remplacera ce sprite par <code>&lt;ha-icon icon="mdi:xxx"&gt;</code> qui est encore plus simple (HA charge MDI nativement).</p>
+</div>
+
+<script>
+let currentMode = 'standard';
+let currentState = 'ok';
+
+function setTheme(t) {
+  document.body.classList.toggle('dark', t === 'dark');
+  document.getElementById('theme-light').classList.toggle('active', t === 'light');
+  document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
+}
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  applyMode();
+}
+
+function setState(s) {
+  currentState = s;
+  document.querySelectorAll('[data-state]').forEach(b => b.classList.toggle('active', b.dataset.state === s));
+  applyState();
+}
+
+const modeIconIds = {
+  'standard': 'mdi-sunny',
+  'active-winter': 'mdi-sun-snowflake',
+  'passive-winter': 'mdi-snowflake',
+  'maintenance': 'mdi-wrench'
+};
+const modeLabels = {
+  'standard': 'Standard',
+  'active-winter': 'Hivernage actif',
+  'passive-winter': 'Hivernage passif',
+  'maintenance': 'Maintenance'
+};
+
+function setIcon(host, id) {
+  host.innerHTML = `<svg><use href="#${id}"/></svg>`;
+}
+
+function applyMode() {
+  const m = currentMode;
+  const label = modeLabels[m];
+  document.getElementById('mode-name').textContent = label;
+  document.getElementById('mode-badge-text').textContent = label;
+  setIcon(document.getElementById('mode-main-icon-i'), modeIconIds[m] || 'mdi-sunny');
+  setIcon(document.getElementById('mode-badge-icon'), modeIconIds[m] || 'mdi-sunny');
+
+  document.querySelectorAll('[data-mode-seg]').forEach(el => {
+    el.classList.toggle('active', el.dataset.modeSeg === m);
+  });
+
+  const isPassive = m === 'passive-winter';
+  const isActiveWinter = m === 'active-winter';
+  const isMaintenance = m === 'maintenance';
+  const isWinter = isPassive || isActiveWinter;
+
+  document.getElementById('maint-warn').style.display = isMaintenance ? 'flex' : 'none';
+
+  const winterHidden = [
+    document.getElementById('gauges'),
+    document.getElementById('chart-block'),
+    document.getElementById('boost-block'),
+    document.getElementById('action-badge'),
+  ];
+  winterHidden.forEach(el => { if (el) el.style.display = isWinter ? 'none' : ''; });
+
+  const grayables = [
+    document.getElementById('gauges'),
+    document.getElementById('chart-block'),
+    document.getElementById('action-badge'),
+  ];
+  grayables.forEach(el => {
+    if (!el) return;
+    el.classList.toggle('opacity-half', isMaintenance);
+    if (isMaintenance) el.style.display = '';
+  });
+}
+
+// === LIQUID GAUGE STATE ===
+const liquidState = {
+  temp: { fillPct: 60, color: 'green', visible: true },
+  ph:   { fillPct: 55, color: 'green', visible: true },
+  orp:  { fillPct: 65, color: 'green', visible: true }
+};
+const liquidColors = {
+  green:  { stop1: '#9EE040', stop2: '#6BB81B' },
+  orange: { stop1: '#FFC25C', stop2: '#E89010' },
+  red:    { stop1: '#FF6B6B', stop2: '#B8011A' }
+};
+const liquidColorsDark = {
+  green:  { stop1: '#5CA80F', stop2: '#3A7708' },
+  orange: { stop1: '#C77808', stop2: '#8E5605' },
+  red:    { stop1: '#A8001F', stop2: '#6B0014' }
+};
+const VIEW_W = 100, VIEW_H = 100;
+function buildWavePath(timeMs, fillPct, amplitude, phaseShift, wavelengthFactor) {
+  const baseY = VIEW_H - fillPct;
+  const segments = 30;
+  const totalWidth = VIEW_W;
+  const phase = (timeMs * 0.0008 * wavelengthFactor) + phaseShift;
+  const wavelength = 1.4 * wavelengthFactor;
+  let d = '';
+  for (let i = 0; i <= segments; i++) {
+    const x = (i / segments) * totalWidth;
+    const y = baseY + Math.sin((x / totalWidth) * Math.PI * 2 * wavelength + phase) * amplitude;
+    if (i === 0) d += `M ${x.toFixed(2)} ${y.toFixed(2)}`;
+    else d += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
+  }
+  d += ` L ${VIEW_W} ${VIEW_H} L 0 ${VIEW_H} Z`;
+  return d;
+}
+function renderGauge(gaugeKey) {
+  const svg = document.getElementById('svg-' + gaugeKey);
+  if (!svg) return;
+  const state = liquidState[gaugeKey];
+  const isDark = document.body.classList.contains('dark');
+  const colors = (isDark ? liquidColorsDark : liquidColors)[state.color];
+  const defs = svg.querySelector('defs');
+  const gradId = `grad-${gaugeKey}-active`;
+  let grad = defs.querySelector('#' + gradId);
+  if (!grad) {
+    grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    grad.setAttribute('id', gradId);
+    grad.setAttribute('x1', '0'); grad.setAttribute('x2', '0');
+    grad.setAttribute('y1', '0'); grad.setAttribute('y2', '1');
+    grad.innerHTML = `<stop offset="0%" stop-color="${colors.stop1}"/><stop offset="100%" stop-color="${colors.stop2}"/>`;
+    defs.appendChild(grad);
+  } else {
+    grad.children[0].setAttribute('stop-color', colors.stop1);
+    grad.children[1].setAttribute('stop-color', colors.stop2);
+  }
+  let backPath = svg.querySelector('.wave-back');
+  let frontPath = svg.querySelector('.wave-front');
+  if (!backPath) {
+    backPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    backPath.setAttribute('class', 'wave-back');
+    backPath.setAttribute('fill', `url(#${gradId})`);
+    backPath.setAttribute('opacity', '0.55');
+    svg.appendChild(backPath);
+  } else {
+    backPath.setAttribute('fill', `url(#${gradId})`);
+  }
+  if (!frontPath) {
+    frontPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    frontPath.setAttribute('class', 'wave-front');
+    frontPath.setAttribute('fill', `url(#${gradId})`);
+    frontPath.setAttribute('opacity', '1');
+    svg.appendChild(frontPath);
+  } else {
+    frontPath.setAttribute('fill', `url(#${gradId})`);
+  }
+}
+let startTime = performance.now();
+const gaugeKeys = ['temp', 'ph', 'orp'];
+function animateGauges(now) {
+  const t = now - startTime;
+  gaugeKeys.forEach((key, idx) => {
+    const state = liquidState[key];
+    const svg = document.getElementById('svg-' + key);
+    if (!svg) return;
+    const backPath = svg.querySelector('.wave-back');
+    const frontPath = svg.querySelector('.wave-front');
+    if (!backPath || !frontPath) return;
+    const breathing = Math.sin(t * 0.0005 + idx * 0.5) * 0.4;
+    const effectiveFill = state.fillPct + breathing;
+    const backD = buildWavePath(t, effectiveFill, 1.5, idx * 1.2, 0.7);
+    const frontD = buildWavePath(t * 1.3, effectiveFill, 2.5, idx * 1.2 + Math.PI / 2, 1.0);
+    backPath.setAttribute('d', backD);
+    frontPath.setAttribute('d', frontD);
+  });
+  requestAnimationFrame(animateGauges);
+}
+function initGauges() {
+  gaugeKeys.forEach(k => renderGauge(k));
+  requestAnimationFrame(animateGauges);
+}
+
+function applyState() {
+  const s = currentState;
+  liquidState.ph.color = 'green';
+  liquidState.ph.fillPct = 55;
+  document.getElementById('ph-val').textContent = '7,4';
+  document.getElementById('ph-tag').textContent = 'Idéal';
+  document.getElementById('ph-tag').className = 'status-tag ok';
+  document.getElementById('pump-row').className = 'pump-row on';
+  document.getElementById('pump-val').textContent = 'Allumée';
+  document.getElementById('pump-toggle').className = 'toggle on';
+  setIcon(document.getElementById('pump-icon-i'), 'mdi-water-pump');
+  document.querySelectorAll('.boost-btn').forEach(b => b.classList.toggle('active', b.dataset.boost === 'none'));
+  document.getElementById('boost-cd').classList.remove('visible');
+  document.getElementById('boost-active').classList.remove('visible');
+  document.getElementById('action-badge').className = 'badge ok';
+  document.getElementById('action-badge').innerHTML = '<span class="mdi"><svg><use href="#mdi-cool"/></svg></span><span>Tout va bien</span>';
+
+  if (s === 'phbad') {
+    liquidState.ph.color = 'red';
+    liquidState.ph.fillPct = 18;
+    document.getElementById('ph-val').textContent = '6,76';
+    document.getElementById('ph-tag').textContent = 'Trop bas';
+    document.getElementById('ph-tag').className = 'status-tag bad';
+    document.getElementById('action-badge').className = 'badge warn';
+    document.getElementById('action-badge').innerHTML = '<span class="mdi"><svg><use href="#mdi-alert"/></svg></span><span>Action requise</span>';
+  }
+  if (s === 'boost') {
+    document.querySelectorAll('.boost-btn').forEach(b => b.classList.toggle('active', b.dataset.boost === '2h'));
+    document.getElementById('boost-cd').classList.add('visible');
+    document.getElementById('boost-active').classList.add('visible');
+  }
+  if (s === 'pumpoff') {
+    document.getElementById('pump-row').className = 'pump-row off';
+    document.getElementById('pump-val').textContent = 'Éteinte';
+    document.getElementById('pump-toggle').className = 'toggle';
+    setIcon(document.getElementById('pump-icon-i'), 'mdi-water-pump-off');
+  }
+  if (s === 'unavail') {
+    document.getElementById('ph-val').textContent = '—';
+    liquidState.ph.fillPct = 0;
+    document.getElementById('ph-tag').textContent = 'Indispo';
+    document.getElementById('ph-tag').className = 'status-tag bad';
+  }
+  gaugeKeys.forEach(k => renderGauge(k));
+}
+
+document.querySelectorAll('.boost-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.boost-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const active = btn.dataset.boost !== 'none';
+    document.getElementById('boost-cd').classList.toggle('visible', active);
+    document.getElementById('boost-active').classList.toggle('visible', active);
+  });
+});
+document.querySelectorAll('[data-mode-seg]').forEach(el => {
+  el.addEventListener('click', () => setMode(el.dataset.modeSeg));
+});
+document.getElementById('pump-toggle').addEventListener('click', e => {
+  e.stopPropagation();
+  const isOn = e.currentTarget.classList.toggle('on');
+  document.getElementById('pump-row').className = isOn ? 'pump-row on' : 'pump-row off';
+  document.getElementById('pump-val').textContent = isOn ? 'Allumée' : 'Éteinte';
+  setIcon(document.getElementById('pump-icon-i'), isOn ? 'mdi-water-pump' : 'mdi-water-pump-off');
+});
+
+// === CHART ===
+const chartData = {
+  '24': {
+    points: [22.5, 22.3, 22.0, 21.8, 21.5, 21.3, 21.6, 22.2, 23.5, 24.8, 25.9, 26.4, 26.8, 27.1, 27.3, 27.5, 27.2, 26.9, 26.7, 26.8, 26.9, 26.9, 26.9, 26.9],
+    labels: [{i:0,t:'00:00'},{i:6,t:'06:00'},{i:12,t:'12:00'},{i:18,t:'18:00'},{i:23,t:'23:30'}],
+    dateAt: i => `aujourd'hui · ${String(i).padStart(2,'0')}:00`
+  },
+  '48': {
+    points: [18,18.2,18.5,19,19.8,20.5,21,21.5,22,22.5,23,23.5,24,24.3,24.5,24.2,24,23.8,23.5,23,22.5,22,21.5,21.5,22,22.5,23,23.5,24,24.8,25.5,26,26.5,26.8,27,27.2,27.3,27.5,27.2,27,26.8,26.7,26.8,26.9,26.9,26.9,26.9,26.9],
+    labels: [{i:0,t:'J-2'},{i:12,t:'12h'},{i:24,t:'Hier'},{i:36,t:'12h'},{i:47,t:'now'}],
+    dateAt: i => `il y a ${48-i}h`
+  },
+  '96': {
+    points: [13.2,13.5,14,14.5,15,15.5,16,16.5,17,17.5,18,18.5,18.8,19,19.2,19.4,19.5,19.6,19.7,19.8,20,20.2,20.5,20.8,21,21.2,21.5,21.8,22,22.2,22.5,22.7,23,23.2,23.5,23.8,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24.5,25,25.5,26,26.2,26.5,26.8,27,27.2,27.3,27.5,27.4,27.3,27.2,27,26.8,26.7,26.8,26.9,27,27.1,27,26.9,26.8,26.9,27,27.1,27,26.9,26.8,26.9,26.9,27,26.9,26.9,26.9,26.9,26.9,26.9],
+    labels: [{i:0,t:'sam.23'},{i:24,t:'dim.24'},{i:48,t:'lun.25'},{i:72,t:'mar.26'},{i:95,t:'mer.27'}],
+    dateAt: i => {
+      const day = ['sam. 23','dim. 24','lun. 25','mar. 26','mer. 27'][Math.floor(i/24)] || "aujourd'hui";
+      const h = String((i % 24)).padStart(2,'0');
+      return `${day} · ${h}:00`;
+    }
+  },
+  '7d': {
+    points: Array.from({length: 28}, (_,i)=>{
+      if (i < 4) return 13 + i*2;
+      if (i < 12) return 18 + Math.sin(i)*1.5 + (i-4)*0.8;
+      return 24 + Math.sin(i)*1.2 + (i-12)*0.2;
+    }),
+    labels: [{i:0,t:'J-7'},{i:7,t:'J-5'},{i:14,t:'J-3'},{i:21,t:'J-1'},{i:27,t:'now'}],
+    dateAt: i => `J-${Math.round((28-i)/4)}`
+  }
+};
+let activePeriod = '96';
+function drawChart() {
+  const data = chartData[activePeriod];
+  const points = data.points;
+  const n = points.length;
+  const minVal = 13, maxVal = 28;
+  const xStart = 28, xEnd = 358, yStart = 14, yEnd = 113;
+  const coords = points.map((v, i) => {
+    const x = xStart + (i / (n - 1)) * (xEnd - xStart);
+    const y = yEnd - ((v - minVal) / (maxVal - minVal)) * (yEnd - yStart);
+    return { x, y, v, i };
+  });
+  let linePath = `M ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+  for (let i = 1; i < coords.length; i++) {
+    const cp1x = (coords[i-1].x + coords[i].x) / 2;
+    const cp1y = coords[i-1].y;
+    const cp2x = (coords[i-1].x + coords[i].x) / 2;
+    const cp2y = coords[i].y;
+    linePath += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${coords[i].x.toFixed(1)} ${coords[i].y.toFixed(1)}`;
+  }
+  const areaPath = linePath + ` L ${xEnd} ${yEnd} L ${xStart} ${yEnd} Z`;
+  document.getElementById('chart-data').innerHTML = `
+    <path class="data-area" d="${areaPath}"/>
+    <path class="data-line" d="${linePath}"/>
+  `;
+  const xLabelsEl = document.getElementById('x-labels');
+  xLabelsEl.innerHTML = data.labels.map(l => {
+    const x = xStart + (l.i / (n - 1)) * (xEnd - xStart);
+    return `<text x="${x.toFixed(1)}" y="125" text-anchor="middle" class="axis-label">${l.t}</text>`;
+  }).join('');
+  return coords;
+}
+let chartCoords = drawChart();
+const svg = document.getElementById('chart-svg');
+const hoverLine = document.getElementById('hover-line');
+const hoverDot = document.getElementById('hover-dot');
+const tooltip = document.getElementById('chart-tooltip');
+function showHover(clientX) {
+  const rect = svg.getBoundingClientRect();
+  const relX = ((clientX - rect.left) / rect.width) * 360;
+  let nearest = chartCoords[0];
+  let minDist = Math.abs(chartCoords[0].x - relX);
+  for (const c of chartCoords) {
+    const d = Math.abs(c.x - relX);
+    if (d < minDist) { minDist = d; nearest = c; }
+  }
+  hoverLine.style.display = 'block';
+  hoverLine.setAttribute('x1', nearest.x);
+  hoverLine.setAttribute('x2', nearest.x);
+  hoverDot.style.display = 'block';
+  hoverDot.setAttribute('cx', nearest.x);
+  hoverDot.setAttribute('cy', nearest.y);
+  tooltip.style.display = 'block';
+  const pctX = (nearest.x / 360) * 100;
+  const pctY = (nearest.y / 130) * 100;
+  tooltip.style.left = pctX + '%';
+  tooltip.style.top = pctY + '%';
+  tooltip.querySelector('.tt-val').textContent = nearest.v.toFixed(1) + '°C';
+  tooltip.querySelector('.tt-date').textContent = chartData[activePeriod].dateAt(nearest.i);
+}
+function hideHover() {
+  hoverLine.style.display = 'none';
+  hoverDot.style.display = 'none';
+  tooltip.style.display = 'none';
+}
+svg.addEventListener('mousemove', e => showHover(e.clientX));
+svg.addEventListener('mouseleave', hideHover);
+svg.addEventListener('touchstart', e => { if (e.touches[0]) showHover(e.touches[0].clientX); });
+svg.addEventListener('touchmove', e => { if (e.touches[0]) showHover(e.touches[0].clientX); });
+svg.addEventListener('touchend', hideHover);
+document.querySelectorAll('.chart-period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chart-period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activePeriod = btn.dataset.period;
+    chartCoords = drawChart();
+  });
+});
+
+initGauges();
+applyMode();
+applyState();
+</script>
+
+</body>
+</html>
