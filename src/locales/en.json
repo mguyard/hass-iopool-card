@@ -1,0 +1,115 @@
+{
+  "card": {
+    "subtitle": "Pool management",
+    "pool_management": "Pool management",
+    "default_name": "Pool"
+  },
+  "header": {
+    "all_good": "All good",
+    "action_recommended": "Action recommended",
+    "action_required": "Action required"
+  },
+  "iopool_mode": {
+    "STANDARD": "Standard",
+    "OPENING": "Opening",
+    "ACTIVE_WINTER": "Active wintering",
+    "WINTER": "Passive wintering",
+    "INITIALIZATION": "Initialization",
+    "MAINTENANCE": "Maintenance"
+  },
+  "pool_mode": {
+    "Standard": "Standard",
+    "Active-Winter": "Active winter",
+    "Passive-Winter": "Passive winter"
+  },
+  "sections": {
+    "mode_filtration": "Filtration mode",
+    "pump": "Pool pump",
+    "filtration_daily": "Daily filtration",
+    "boost": "Boost",
+    "temperature_chart": "Temperature"
+  },
+  "measures": {
+    "temperature": "Temperature",
+    "ph": "pH",
+    "orp": "ORP",
+    "target": "Target {value}",
+    "target_range": "Target {low} - {high}",
+    "status_ok": "Ideal",
+    "status_warn": "Warning",
+    "status_bad": "Critical"
+  },
+  "status": {
+    "too_low": "Too low",
+    "low": "Low",
+    "ideal": "Ideal",
+    "high": "High",
+    "too_high": "Too high",
+    "unavailable": "Unavail.",
+    "stats_min": "Min",
+    "stats_avg": "Avg",
+    "stats_max": "Max"
+  },
+  "pump": {
+    "on": "On",
+    "off": "Off"
+  },
+  "filtration": {
+    "daily_filtration": "Daily filtration",
+    "done": "Done {time}",
+    "target": "target {value}",
+    "iopool_recommendation": "iopool {time}",
+    "completed": "Done {time} · target {target}",
+    "recommendation": "iopool: {time}",
+    "elapsed": "Elapsed",
+    "required": "Required",
+    "iopool_recommended": "iopool rec."
+  },
+  "boost": {
+    "active": "Active · {remaining} left",
+    "stop": "Stop",
+    "boost": "Boost",
+    "none": "None",
+    "active_until": "Active until {time}"
+  },
+  "warnings": {
+    "maintenance": "Maintenance mode · data may be outdated",
+    "initialization": "Initialization in progress · data may be incomplete"
+  },
+  "chart": {
+    "period_24h": "24h",
+    "period_48h": "48h",
+    "period_96h": "96h",
+    "period_7d": "7d",
+    "today": "today",
+    "yesterday": "yesterday",
+    "temperature": "Temperature",
+    "min": "Min",
+    "avg": "Avg",
+    "max": "Max"
+  },
+  "editor": {
+    "device_id": "iopool device",
+    "device_id_helper": "Select the iopool pool device",
+    "pump_entity": "Pump entity (optional)",
+    "show_chart": "Show temperature chart",
+    "chart_period": "Chart period",
+    "temperature_thresholds": "Temperature thresholds",
+    "threshold_t0": "Red-low / Yellow-low end",
+    "threshold_t1": "Yellow-low / Green start",
+    "threshold_t2": "Green / Yellow-high end",
+    "threshold_t3": "Yellow-high / Red-high start",
+    "preset_pool": "Pool preset",
+    "preset_spa": "Spa preset",
+    "section_actions": "Custom actions",
+    "tap_action": "Tap action",
+    "hold_action": "Hold action",
+    "double_tap_action": "Double tap action"
+  },
+  "errors": {
+    "device_required": "Please select a device",
+    "device_not_iopool": "The selected device is not an iopool device",
+    "entities_missing": "Required iopool entities could not be found for this device",
+    "thresholds_order": "Thresholds must be strictly increasing"
+  }
+}

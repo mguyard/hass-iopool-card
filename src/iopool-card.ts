@@ -7,9 +7,7 @@ import './components/header';
 import './components/warning-banner';
 import './components/liquid-gauge';
 import './components/mode-selector';
-import './components/pump-control';
-import './components/filtration-progress';
-import './components/boost-selector';
+import './components/pump-panel';
 import './components/temperature-chart';
 import type {
   HomeAssistant,
@@ -21,7 +19,13 @@ import type {
   IopoolMode,
   PoolFilterMode,
 } from './types';
-import { CARD_VERSION, CHART_PERIODS, DEFAULT_CHART_PERIOD, PH_THRESHOLDS, ORP_THRESHOLDS } from './const';
+import {
+  CARD_VERSION,
+  CHART_PERIODS,
+  DEFAULT_CHART_PERIOD,
+  PH_THRESHOLDS,
+  ORP_THRESHOLDS,
+} from './const';
 import { resolveEntities } from './helpers/device';
 import { validateThresholds, resolveThresholds } from './helpers/thresholds';
 import { DebugLogger } from './helpers/debug';
@@ -358,34 +362,24 @@ export class IopoolCard extends LitElement {
       tempValue !== null && !isNaN(tempValue) ? valueToZone(tempValue, thresholds) : 'unknown';
     // fillPercent expects 0-1 range; valueToFillPct returns 0-100.
     const tempFill =
-      tempValue !== null && !isNaN(tempValue)
-        ? valueToFillPct(tempValue, thresholds) / 100
-        : 0.5;
+      tempValue !== null && !isNaN(tempValue) ? valueToFillPct(tempValue, thresholds) / 100 : 0.5;
     const tempTarget = thresholds[1]; // yellow-low lower bound — used as visual ideal marker
 
     // --- pH ---
     const phEntityId = this._entities?.ph;
-    const phValue = phEntityId
-      ? parseFloat(this._hass.states[phEntityId]?.state ?? 'NaN')
-      : null;
-    const phZone =
-      phValue !== null && !isNaN(phValue) ? phToZone(phValue) : 'unknown';
+    const phValue = phEntityId ? parseFloat(this._hass.states[phEntityId]?.state ?? 'NaN') : null;
+    const phZone = phValue !== null && !isNaN(phValue) ? phToZone(phValue) : 'unknown';
     const phFill =
-      phValue !== null && !isNaN(phValue)
-        ? valueToFillPct(phValue, PH_THRESHOLDS) / 100
-        : 0.5;
+      phValue !== null && !isNaN(phValue) ? valueToFillPct(phValue, PH_THRESHOLDS) / 100 : 0.5;
 
     // --- ORP ---
     const orpEntityId = this._entities?.orp;
     const orpValue = orpEntityId
       ? parseFloat(this._hass.states[orpEntityId]?.state ?? 'NaN')
       : null;
-    const orpZone =
-      orpValue !== null && !isNaN(orpValue) ? orpToZone(orpValue) : 'unknown';
+    const orpZone = orpValue !== null && !isNaN(orpValue) ? orpToZone(orpValue) : 'unknown';
     const orpFill =
-      orpValue !== null && !isNaN(orpValue)
-        ? valueToFillPct(orpValue, ORP_THRESHOLDS) / 100
-        : 0.5;
+      orpValue !== null && !isNaN(orpValue) ? valueToFillPct(orpValue, ORP_THRESHOLDS) / 100 : 0.5;
 
     // --- Pump ---
     const pumpEntityId = this._config.pump_entity;
@@ -398,7 +392,7 @@ export class IopoolCard extends LitElement {
     const filtDurationRaw = elapsedFiltEntityId
       ? parseFloat(this._hass.states[elapsedFiltEntityId]?.state ?? 'NaN')
       : NaN;
-    const filtDuration = isNaN(filtDurationRaw) ? null : filtDurationRaw;
+    const filtDuration = isNaN(filtDurationRaw) ? null : filtDurationRaw * 60;
 
     const recEntityId = this._entities?.filtrationRecommendation;
     const recDurationRaw = recEntityId
@@ -406,13 +400,22 @@ export class IopoolCard extends LitElement {
       : NaN;
     const recDuration = isNaN(recDurationRaw) ? null : recDurationRaw;
 
+    // Integration calculated required filtration duration
+    const filtrationEntityId = this._entities?.filtration;
+    const integrationRequiredRaw = filtrationEntityId
+      ? Number(
+          (
+            this._hass.states[filtrationEntityId]?.attributes as Record<string, unknown> | undefined
+          )?.['filtration_duration_minutes'] ?? NaN,
+        )
+      : NaN;
+    const integrationRequired = isNaN(integrationRequiredRaw) ? null : integrationRequiredRaw;
+
     // --- Boost ---
     const boostEntityId = this._entities?.boostSelector;
-    const boostState = boostEntityId
-      ? (this._hass.states[boostEntityId]?.state ?? 'none')
-      : 'none';
+    const boostState = boostEntityId ? (this._hass.states[boostEntityId]?.state ?? 'none') : 'none';
     const boostEndTime = boostEntityId
-      ? (this._hass.states[boostEntityId]?.attributes?.['end_time'] as string | undefined)
+      ? (this._hass.states[boostEntityId]?.attributes?.['boost_end_time'] as string | undefined)
       : undefined;
 
     // CSS modifier class for maintenance / initialization grayed-out state
@@ -451,6 +454,7 @@ export class IopoolCard extends LitElement {
                     .value=${tempValue}
                     .unit=${'°C'}
                     .target=${tempTarget}
+                    .targetHigh=${thresholds[2]}
                     .zone=${tempZone}
                     .fillPercent=${tempFill}
                     .language=${lang}
@@ -460,6 +464,8 @@ export class IopoolCard extends LitElement {
                     .label=${'pH'}
                     .value=${phValue}
                     .unit=${''}
+                    .target=${PH_THRESHOLDS[1]}
+                    .targetHigh=${PH_THRESHOLDS[2]}
                     .zone=${phZone}
                     .fillPercent=${phFill}
                     .language=${lang}
@@ -469,6 +475,8 @@ export class IopoolCard extends LitElement {
                     .label=${'ORP'}
                     .value=${orpValue}
                     .unit=${'mV'}
+                    .target=${ORP_THRESHOLDS[1]}
+                    .targetHigh=${ORP_THRESHOLDS[2]}
                     .zone=${orpZone}
                     .fillPercent=${orpFill}
                     .language=${lang}
@@ -491,44 +499,22 @@ export class IopoolCard extends LitElement {
               `
             : ''}
 
-          <!-- PUMP CONTROL -->
+          <!-- PUMP PANEL (pump + filtration + boost) -->
           ${flags.showPump
             ? html`
                 <div class="iopool-section ${grayedClass}">
-                  <iopool-pump-control
+                  <iopool-pump-panel
                     .pumpEntityId=${pumpEntityId}
                     .pumpState=${pumpState}
                     .hass=${this._hass}
+                    .filtrationDurationMinutes=${flags.showFiltration ? filtDuration : null}
+                    .recommendedMinutes=${flags.showFiltration ? recDuration : null}
+                    .integrationRequiredMinutes=${flags.showFiltration ? integrationRequired : null}
+                    .boostEntityId=${flags.showBoost ? boostEntityId : undefined}
+                    .currentOption=${flags.showBoost ? boostState : 'none'}
+                    .endTime=${flags.showBoost ? boostEndTime : undefined}
                     .language=${lang}
-                  ></iopool-pump-control>
-                </div>
-              `
-            : ''}
-
-          <!-- FILTRATION PROGRESS (standard mode only) -->
-          ${flags.showFiltration
-            ? html`
-                <div class="iopool-section ${grayedClass}">
-                  <iopool-filtration-progress
-                    .filtrationDurationMinutes=${filtDuration}
-                    .recommendedMinutes=${recDuration}
-                    .language=${lang}
-                  ></iopool-filtration-progress>
-                </div>
-              `
-            : ''}
-
-          <!-- BOOST (standard mode with Standard pool_mode only) -->
-          ${flags.showBoost
-            ? html`
-                <div class="iopool-section ${grayedClass}">
-                  <iopool-boost-selector
-                    .boostEntityId=${boostEntityId}
-                    .currentOption=${boostState}
-                    .endTime=${boostEndTime}
-                    .hass=${this._hass}
-                    .language=${lang}
-                  ></iopool-boost-selector>
+                  ></iopool-pump-panel>
                 </div>
               `
             : ''}

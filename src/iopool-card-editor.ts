@@ -74,7 +74,7 @@ export class IopoolCardEditor extends LitElement {
   // Resolved language code — strips region variant (e.g. 'fr-FR' → 'fr').
   private get _lang(): string {
     const raw = this.hass?.locale?.language ?? this.hass?.language ?? 'en';
-    return raw.split('-')[0];
+    return raw.split('-')[0] ?? raw;
   }
 
   // ha-form schema for the main configuration fields.

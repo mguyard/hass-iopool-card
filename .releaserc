@@ -1,0 +1,71 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "beta",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "semantic-release-replace-plugin",
+      {
+        "replacements": [
+          {
+            "files": ["src/const.ts"],
+            "from": "__CARD_VERSION__",
+            "to": "${nextRelease.version}",
+            "results": [
+              {
+                "file": "src/const.ts",
+                "hasChanged": true,
+                "numMatches": 1,
+                "numReplacements": 1
+              }
+            ],
+            "countMatches": true
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "npm run build"
+      }
+    ],
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": false
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "dist/iopool-card.js", "package.json"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/iopool-card.js",
+            "label": "iopool-card.js"
+          }
+        ]
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "git clone https://x-access-token:$PAT_HASS_IOPOOL@github.com/mguyard/hass-iopool.git /tmp/hass-iopool && cd /tmp/hass-iopool && git config user.email 'github-actions@github.com' && git config user.name 'github-actions' && git checkout -b card-update-v${nextRelease.version} && cp $GITHUB_WORKSPACE/dist/iopool-card.js custom_components/iopool/frontend/iopool-card.js && git add custom_components/iopool/frontend/iopool-card.js && git commit -m 'chore: update iopool-card to v${nextRelease.version}' && git push origin card-update-v${nextRelease.version} && GH_TOKEN=$PAT_HASS_IOPOOL gh pr create --repo mguyard/hass-iopool --title 'chore: update iopool-card to v${nextRelease.version}' --body 'Automated update from hass-iopool-card release v${nextRelease.version}' --label card-update --base main"
+      }
+    ]
+  ]
+}

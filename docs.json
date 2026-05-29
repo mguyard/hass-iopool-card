@@ -1,0 +1,46 @@
+{
+  "name": "iopool Card",
+  "logo": "docs/assets/logo-light.svg",
+  "logoDark": "docs/assets/logo-dark.svg",
+  "favicon": "docs/assets/favicon.png",
+  "sidebar": [
+    { "group": "Getting Started", "pages": ["introduction", "installation", "first-card"] },
+    {
+      "group": "Configuration",
+      "pages": [
+        "configuration/overview",
+        "configuration/device",
+        "configuration/pump",
+        "configuration/thresholds",
+        "configuration/chart",
+        "configuration/actions"
+      ]
+    },
+    {
+      "group": "Components",
+      "pages": [
+        "components/header",
+        "components/warning-banner",
+        "components/liquid-gauge",
+        "components/mode-selector",
+        "components/pump-control",
+        "components/filtration-progress",
+        "components/boost-selector",
+        "components/temperature-chart"
+      ]
+    },
+    {
+      "group": "Pool Modes",
+      "pages": [
+        "modes/standard",
+        "modes/active-winter",
+        "modes/passive-winter",
+        "modes/maintenance"
+      ]
+    },
+    {
+      "group": "Troubleshooting",
+      "pages": ["troubleshooting/debug-mode", "troubleshooting/common-issues"]
+    }
+  ]
+}

@@ -383,7 +383,9 @@ describe('IopoolCardEditor._schema', () => {
     expect(field).toBeTruthy();
     expect(field?.required).toBe(true);
     const device = (field?.selector as Record<string, Record<string, unknown>>).device;
-    expect(device).toBeTruthy();
+    if (!device) {
+      throw new Error('Expected device selector');
+    }
     const filter = device.filter as Record<string, unknown>;
     expect(filter.integration).toBe('iopool');
   });
@@ -394,6 +396,9 @@ describe('IopoolCardEditor._schema', () => {
     const field = schema.find((f) => f.name === 'pump_entity');
     expect(field).toBeTruthy();
     const entity = (field?.selector as Record<string, Record<string, unknown>>).entity;
+    if (!entity) {
+      throw new Error('Expected entity selector');
+    }
     expect(entity.domain).toBe('switch');
   });
 
@@ -411,6 +416,9 @@ describe('IopoolCardEditor._schema', () => {
     const field = schema.find((f) => f.name === 'chart_period');
     expect(field).toBeTruthy();
     const select = (field?.selector as Record<string, Record<string, unknown>>).select;
+    if (!select) {
+      throw new Error('Expected select selector');
+    }
     const options = select.options as Array<unknown>;
     expect(options.length).toBe(4);
   });

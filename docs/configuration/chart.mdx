@@ -1,0 +1,24 @@
+---
+title: Chart
+description: Control the temperature chart and its history window.
+previous: /configuration/thresholds
+previousTitle: Thresholds
+next: /configuration/actions
+nextTitle: Actions
+---
+
+# Chart
+
+The temperature chart is enabled by default and can be disabled with `show_chart: false`.
+
+```yaml
+show_chart: true
+chart_period: 96
+```
+
+The period selector supports four values: `24` for 24h, `48` for 2d, `96` for 4d, and `168` for 7d.
+
+<Info>
+  Changing the period updates the chart window immediately and refreshes the history data for that
+  range.
+</Info>

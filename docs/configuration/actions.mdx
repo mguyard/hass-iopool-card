@@ -1,0 +1,26 @@
+---
+title: Actions
+description: Override the tap, hold, and double tap actions for each section.
+previous: /configuration/chart
+previousTitle: Chart
+next: /components/header
+nextTitle: Header
+---
+
+# Actions
+
+Use `section_actions` to customize interactions per section. The card does not expose a global card action because it represents a single pool.
+
+Supported actions are `more-info`, `navigate`, `url`, `call-service`, `toggle`, and `none`.
+
+```yaml
+section_actions:
+  pump:
+    tap_action:
+      action: toggle
+  temperature:
+    tap_action:
+      action: more-info
+```
+
+Default behavior is kept simple: gauges and mode open more-info by default, the pump toggles by default, and the other sections do nothing on hold or double tap unless you override them.

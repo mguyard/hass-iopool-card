@@ -10,6 +10,12 @@ import { css } from 'lit';
  * See SPECIFICATIONS §7.2 (typography), §7.3 (CSS variables), §7.4 (spacing).
  */
 export const sharedStyles = css`
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
   :host {
     /* iopool brand custom properties — used as fallbacks when HA vars are absent */
     --iopool-primary: #17817a;
@@ -53,10 +59,6 @@ export const sharedStyles = css`
     display: flex;
     flex-direction: column;
     gap: 10px;
-  }
-
-  .iopool-section + .iopool-section {
-    border-top: 1px solid var(--divider-color, var(--iopool-divider));
   }
 
   /* === Error state === */

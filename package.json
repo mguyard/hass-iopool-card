@@ -1,0 +1,57 @@
+{
+  "name": "hass-iopool-card",
+  "version": "0.0.0",
+  "description": "Official Home Assistant Lovelace card for the iopool integration",
+  "license": "MIT",
+  "author": "Marc Guyard",
+  "keywords": ["home-assistant", "lovelace", "iopool", "pool"],
+  "homepage": "https://github.com/mguyard/hass-iopool-card",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mguyard/hass-iopool-card"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts && prettier --check src",
+    "lint:fix": "eslint src --ext .ts --fix && prettier --write src",
+    "typecheck": "tsc --noEmit",
+    "build": "rollup -c rollup.config.mjs",
+    "watch": "rollup -c --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev": "rollup -c rollup.config.mjs --watch"
+  },
+  "dependencies": {
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-json": "latest",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-replace": "^5.0.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.0.0",
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^13.0.0",
+    "@semantic-release/exec": "^6.0.0",
+    "@semantic-release/git": "^10.0.0",
+    "@semantic-release/github": "^11.0.0",
+    "@semantic-release/npm": "^12.0.0",
+    "@semantic-release/release-notes-generator": "^14.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.0.0",
+    "rollup": "^4.0.0",
+    "semantic-release": "^24.0.0",
+    "semantic-release-replace-plugin": "^1.2.0",
+    "tslib": "^2.0.0",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

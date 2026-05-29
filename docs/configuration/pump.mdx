@@ -1,0 +1,22 @@
+---
+title: Pump
+description: Configure the optional pump switch entity.
+previous: /configuration/device
+previousTitle: Device
+next: /configuration/thresholds
+nextTitle: Thresholds
+---
+
+# Pump
+
+The pump is optional and must be configured as a Home Assistant switch entity.
+
+```yaml
+pump_entity: switch.pool_pump
+```
+
+<Warning>
+  The value must start with `switch.`. Other domains are rejected by the editor and by the card.
+</Warning>
+
+When the switch is present, the card shows the pump section and lets you toggle it. When it is not configured, the pump section is hidden.

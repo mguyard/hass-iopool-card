@@ -1,0 +1,53 @@
+---
+title: Configuration overview
+description: Full YAML configuration reference for the iopool Card.
+previous: /first-card
+previousTitle: First card
+next: /configuration/device
+nextTitle: Device
+---
+
+# Configuration overview
+
+```yaml
+type: custom:iopool-card
+device_id: 0a1b2c... # Required
+pump_entity: switch.pool_pump # Optional
+show_chart: true # Optional, default true
+chart_period: 96 # Optional: 24|48|96|168
+temperature_thresholds: [15, 20, 29, 32] # Optional
+debug: false # Optional, YAML-only
+section_actions: # Optional
+  temperature:
+    tap_action:
+      action: more-info
+```
+
+<Property name="device_id" type="string" required>
+  The iopool device ID. The visual editor picks it from the iopool device registry.
+</Property>
+
+<Property name="pump_entity" type="string">
+  Optional pump switch entity such as `switch.pool_pump`.
+</Property>
+
+<Property name="show_chart" type="boolean">
+  Shows or hides the temperature chart. Defaults to `true`.
+</Property>
+
+<Property name="chart_period" type="24 | 48 | 96 | 168">
+  Chart window in hours. The editor exposes 24h, 48h, 96h, and 7d.
+</Property>
+
+<Property name="temperature_thresholds" type="[number, number, number, number]">
+  Custom temperature transitions for the gauge zones. Only temperature is configurable; pH and ORP
+  use fixed thresholds.
+</Property>
+
+<Property name="debug" type="boolean">
+  YAML-only debug mode. When enabled, the card prints diagnostics to the browser console.
+</Property>
+
+<Property name="section_actions" type="object">
+  Per-section action overrides for the built-in sections.
+</Property>

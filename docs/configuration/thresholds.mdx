@@ -1,0 +1,23 @@
+---
+title: Thresholds
+description: Customize the temperature gauge thresholds.
+previous: /configuration/pump
+previousTitle: Pump
+next: /configuration/chart
+nextTitle: Chart
+---
+
+# Thresholds
+
+Temperature thresholds define the four transition values that create the five gauge zones:
+red-low, yellow-low, green, yellow-high, and red-high.
+
+```yaml
+temperature_thresholds: [15, 20, 29, 32]
+```
+
+The default pool preset is `[15, 20.5, 29, 32]`. A spa-friendly preset commonly uses `[35, 37, 39, 40]`.
+
+<Info>pH and ORP thresholds are fixed in v1. Only temperature thresholds can be customized.</Info>
+
+Keep the values strictly increasing. If two adjacent values are equal or out of order, the editor rejects the change.

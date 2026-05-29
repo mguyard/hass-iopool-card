@@ -1,0 +1,28 @@
+---
+title: Device
+description: How the device_id setting works and why the card uses a device instead of a single entity.
+previous: /configuration/overview
+previousTitle: Configuration overview
+next: /configuration/pump
+nextTitle: Pump
+---
+
+# Device
+
+The card is configured from a Home Assistant device, not from a single entity.
+
+That is important because all iopool entities for one pool are attached to the same device, and the device ID stays stable even if the pool is renamed.
+
+<Info>
+  The visual editor filters devices to the iopool integration so you only see valid pool devices.
+</Info>
+
+## Finding the device
+
+Open the device page for your pool in Home Assistant. Use the device ID shown in the URL or select it directly from the editor device picker.
+
+## Why this matters
+
+- The card can resolve all pool entities from one device.
+- The title follows the device name or user-set name.
+- A device-based configuration is more robust than hardcoding individual entity IDs.

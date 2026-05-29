@@ -1,0 +1,25 @@
+---
+title: Common issues
+description: Quick checks for the most common setup and runtime problems.
+previous: /troubleshooting/debug-mode
+previousTitle: Debug mode
+---
+
+# Common issues
+
+<Accordion title="The card does not show up">
+  Check that `device_id` is set and that you are using the hass-iopool integration. The card is
+  bundled with the integration and is not installed separately.
+</Accordion>
+
+<Accordion title="The pump toggle does not work">
+  Verify that the configured pump entity exists and starts with `switch.`.
+</Accordion>
+
+<Accordion title="The temperature chart is empty">
+  Check that the temperature entity has history enabled in Home Assistant.
+</Accordion>
+
+<Accordion title="The card language looks wrong">
+  The card follows the Home Assistant language setting.
+</Accordion>

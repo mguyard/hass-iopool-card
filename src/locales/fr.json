@@ -1,0 +1,115 @@
+{
+  "card": {
+    "subtitle": "Gestion de votre bassin",
+    "pool_management": "Gestion de votre bassin",
+    "default_name": "Bassin"
+  },
+  "header": {
+    "all_good": "Tout va bien",
+    "action_recommended": "Action recommandée",
+    "action_required": "Action requise"
+  },
+  "iopool_mode": {
+    "STANDARD": "Standard",
+    "OPENING": "Ouverture",
+    "ACTIVE_WINTER": "Hivernage actif",
+    "WINTER": "Hivernage passif",
+    "INITIALIZATION": "Initialisation",
+    "MAINTENANCE": "Maintenance"
+  },
+  "pool_mode": {
+    "Standard": "Standard",
+    "Active-Winter": "Hivernage actif",
+    "Passive-Winter": "Hivernage passif"
+  },
+  "sections": {
+    "mode_filtration": "Mode de filtration",
+    "pump": "Pompe du bassin",
+    "filtration_daily": "Filtration journalière",
+    "boost": "Boost",
+    "temperature_chart": "Température"
+  },
+  "measures": {
+    "temperature": "Température",
+    "ph": "pH",
+    "orp": "ORP",
+    "target": "Cible {value}",
+    "target_range": "Cible {low} - {high}",
+    "status_ok": "Idéal",
+    "status_warn": "Attention",
+    "status_bad": "Critique"
+  },
+  "status": {
+    "too_low": "Trop bas",
+    "low": "Bas",
+    "ideal": "Idéal",
+    "high": "Élevé",
+    "too_high": "Trop élevé",
+    "unavailable": "Indispo.",
+    "stats_min": "Min",
+    "stats_avg": "Moy",
+    "stats_max": "Max"
+  },
+  "pump": {
+    "on": "Allumée",
+    "off": "Éteinte"
+  },
+  "filtration": {
+    "daily_filtration": "Filtration journalière",
+    "done": "Effectuée {time}",
+    "target": "cible {value}",
+    "iopool_recommendation": "iopool {time}",
+    "completed": "Fait {time} · cible {target}",
+    "recommendation": "iopool : {time}",
+    "elapsed": "Effectuée",
+    "required": "Requise",
+    "iopool_recommended": "Reco. iopool"
+  },
+  "boost": {
+    "active": "Actif · {remaining} restant",
+    "stop": "Arrêter",
+    "boost": "Boost",
+    "none": "Aucun",
+    "active_until": "Actif jusqu'à {time}"
+  },
+  "warnings": {
+    "maintenance": "Mode maintenance · les données peuvent être obsolètes",
+    "initialization": "Initialisation en cours · les données peuvent être incomplètes"
+  },
+  "chart": {
+    "period_24h": "24h",
+    "period_48h": "48h",
+    "period_96h": "96h",
+    "period_7d": "7j",
+    "today": "aujourd'hui",
+    "yesterday": "hier",
+    "temperature": "Température",
+    "min": "Min",
+    "avg": "Moy",
+    "max": "Max"
+  },
+  "editor": {
+    "device_id": "Appareil iopool",
+    "device_id_helper": "Sélectionnez l'appareil bassin iopool",
+    "pump_entity": "Entité pompe (optionnel)",
+    "show_chart": "Afficher le graphique de température",
+    "chart_period": "Période du graphique",
+    "temperature_thresholds": "Seuils de température",
+    "threshold_t0": "Fin rouge-bas / jaune-bas",
+    "threshold_t1": "Début vert / fin jaune-bas",
+    "threshold_t2": "Fin vert / début jaune-haut",
+    "threshold_t3": "Début rouge-haut / fin jaune-haut",
+    "preset_pool": "Préréglage piscine",
+    "preset_spa": "Préréglage spa",
+    "section_actions": "Actions personnalisées",
+    "tap_action": "Action au toucher",
+    "hold_action": "Action maintenu",
+    "double_tap_action": "Action double toucher"
+  },
+  "errors": {
+    "device_required": "Veuillez sélectionner un appareil",
+    "device_not_iopool": "L'appareil sélectionné n'est pas un appareil iopool",
+    "entities_missing": "Les entités iopool requises n'ont pas été trouvées pour cet appareil",
+    "thresholds_order": "Les seuils doivent être strictement croissants"
+  }
+}

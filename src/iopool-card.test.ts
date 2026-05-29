@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { HomeAssistant, IopoolCardConfig, ResolvedEntities, DisplayFlags, HassEntity } from './types';
+import type {
+  HomeAssistant,
+  IopoolCardConfig,
+  ResolvedEntities,
+  DisplayFlags,
+  HassEntity,
+} from './types';
 // Import triggers custom element registration and window.customCards population.
 import { IopoolCard } from './iopool-card';
 
@@ -303,7 +309,9 @@ describe('IopoolCard.render', () => {
       },
     });
     // Inject resolved entities directly so _displayFlags reads the mode entity.
-    (card as unknown as Record<string, unknown>)._entities = { mode: modeEntityId } satisfies ResolvedEntities;
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: modeEntityId,
+    } satisfies ResolvedEntities;
     card.hass = hass;
     expect(() => (card as unknown as { render: () => unknown }).render()).not.toThrow();
   });
@@ -326,7 +334,11 @@ function setPrivateHass(card: IopoolCard, hass: HomeAssistant): void {
   (card as unknown as Record<string, unknown>)._hass = hass;
 }
 
-function makeHassState(entityId: string, state: string, attributes: Record<string, unknown> = {}): HassEntity {
+function makeHassState(
+  entityId: string,
+  state: string,
+  attributes: Record<string, unknown> = {},
+): HassEntity {
   return { entity_id: entityId, state, attributes, last_changed: '', last_updated: '' };
 }
 
@@ -349,7 +361,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }),
+    );
     expect(getFlags(card).warningBanner).toBe('maintenance');
   });
 
@@ -358,7 +373,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }),
+    );
     expect(getFlags(card).warningBanner).toBe('initialization');
   });
 
@@ -367,7 +385,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }),
+    );
     expect(getFlags(card).isGrayed).toBe(true);
   });
 
@@ -376,7 +397,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'INITIALIZATION') } }),
+    );
     expect(getFlags(card).isGrayed).toBe(true);
   });
 
@@ -385,7 +409,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'ACTIVE_WINTER') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'ACTIVE_WINTER') } }),
+    );
     expect(getFlags(card).showGauges).toBe(false);
   });
 
@@ -403,7 +430,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }),
+    );
     expect(getFlags(card).showGauges).toBe(true);
   });
 
@@ -413,12 +443,15 @@ describe('IopoolCard._displayFlags', () => {
     const modeId = 'sensor.iopool_test_iopool_mode';
     const filtId = 'binary_sensor.iopool_test_filtration';
     setPrivateEntities(card, { mode: modeId, filtration: filtId });
-    setPrivateHass(card, buildMockHass({
-      states: {
-        [modeId]: makeHassState(modeId, 'ACTIVE_WINTER'),
-        [filtId]: makeHassState(filtId, 'off'),
-      },
-    }));
+    setPrivateHass(
+      card,
+      buildMockHass({
+        states: {
+          [modeId]: makeHassState(modeId, 'ACTIVE_WINTER'),
+          [filtId]: makeHassState(filtId, 'off'),
+        },
+      }),
+    );
     expect(getFlags(card).showFiltration).toBe(true);
   });
 
@@ -428,12 +461,15 @@ describe('IopoolCard._displayFlags', () => {
     const modeId = 'sensor.iopool_test_iopool_mode';
     const filtId = 'binary_sensor.iopool_test_filtration';
     setPrivateEntities(card, { mode: modeId, filtration: filtId });
-    setPrivateHass(card, buildMockHass({
-      states: {
-        [modeId]: makeHassState(modeId, 'WINTER'),
-        [filtId]: makeHassState(filtId, 'off'),
-      },
-    }));
+    setPrivateHass(
+      card,
+      buildMockHass({
+        states: {
+          [modeId]: makeHassState(modeId, 'WINTER'),
+          [filtId]: makeHassState(filtId, 'off'),
+        },
+      }),
+    );
     expect(getFlags(card).showFiltration).toBe(false);
   });
 
@@ -443,12 +479,15 @@ describe('IopoolCard._displayFlags', () => {
     const modeId = 'sensor.iopool_test_iopool_mode';
     const filtId = 'binary_sensor.iopool_test_filtration';
     setPrivateEntities(card, { mode: modeId, filtration: filtId });
-    setPrivateHass(card, buildMockHass({
-      states: {
-        [modeId]: makeHassState(modeId, 'STANDARD'),
-        [filtId]: makeHassState(filtId, 'off'),
-      },
-    }));
+    setPrivateHass(
+      card,
+      buildMockHass({
+        states: {
+          [modeId]: makeHassState(modeId, 'STANDARD'),
+          [filtId]: makeHassState(filtId, 'off'),
+        },
+      }),
+    );
     expect(getFlags(card).showFiltration).toBe(true);
   });
 
@@ -457,7 +496,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }),
+    );
     expect(getFlags(card).showBoost).toBe(false);
   });
 
@@ -466,12 +508,15 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig({ ...VALID_CONFIG, pump_entity: 'switch.pool_pump' });
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({
-      states: {
-        [modeId]: makeHassState(modeId, 'WINTER'),
-        'switch.pool_pump': makeHassState('switch.pool_pump', 'off'),
-      },
-    }));
+    setPrivateHass(
+      card,
+      buildMockHass({
+        states: {
+          [modeId]: makeHassState(modeId, 'WINTER'),
+          'switch.pool_pump': makeHassState('switch.pool_pump', 'off'),
+        },
+      }),
+    );
     expect(getFlags(card).showPump).toBe(false);
   });
 
@@ -480,7 +525,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig({ ...VALID_CONFIG, show_chart: false });
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }),
+    );
     expect(getFlags(card).showChart).toBe(false);
   });
 
@@ -489,7 +537,10 @@ describe('IopoolCard._displayFlags', () => {
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }));
+    setPrivateHass(
+      card,
+      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }),
+    );
     expect(getFlags(card).showChart).toBe(true);
   });
 });
