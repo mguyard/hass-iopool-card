@@ -17,10 +17,10 @@ Supported actions are `more-info`, `navigate`, `url`, `call-service`, `toggle`, 
 section_actions:
   pump:
     tap_action:
-      action: toggle
+      action: toggle // [!code highlight]
   temperature:
     tap_action:
-      action: more-info
+      action: more-info // [!code highlight]
 ```
 
 Default behavior is kept simple: gauges and mode open more-info by default, the pump toggles by default, and the other sections do nothing on hold or double tap unless you override them.

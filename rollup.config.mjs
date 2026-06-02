@@ -21,7 +21,7 @@ export default {
   },
   plugins: [
     replace({
-      __CARD_VERSION__: JSON.stringify(pkg.version),
+      __CARD_VERSION__: pkg.version,
       preventAssignment: true,
     }),
     resolve({

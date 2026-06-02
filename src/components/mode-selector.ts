@@ -75,15 +75,16 @@ export class IopoolModeSelector extends LitElement {
     css`
       :host {
         display: block;
+        container-type: inline-size;
       }
 
       .mode-selector {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 14px;
+        gap: 10px;
         width: 100%;
-        padding: 14px 16px;
+        padding: 10px 16px;
         border-radius: 18px;
         background: var(--iopool-surface);
       }
@@ -91,13 +92,13 @@ export class IopoolModeSelector extends LitElement {
       .mode-selector__summary {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 10px;
         min-width: 0;
       }
 
       .mode-selector__icon {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 12px;
         background: linear-gradient(
           135deg,
@@ -109,7 +110,7 @@ export class IopoolModeSelector extends LitElement {
         align-items: center;
         justify-content: center;
         flex: 0 0 auto;
-        box-shadow: 0 4px 10px rgba(23, 129, 122, 0.25);
+        box-shadow: 0 4px 10px color-mix(in srgb, var(--iopool-primary, #17817a) 25%, transparent);
       }
 
       .mode-selector__icon ha-icon {
@@ -162,7 +163,7 @@ export class IopoolModeSelector extends LitElement {
 
       .mode-selector__button:hover:not(:disabled):not(.mode-selector__button--active) {
         transform: translateY(-1px);
-        background: rgba(23, 129, 122, 0.08);
+        background: color-mix(in srgb, var(--iopool-primary, #17817a) 8%, transparent);
       }
 
       .mode-selector__button--active:hover:not(:disabled) {
@@ -192,6 +193,20 @@ export class IopoolModeSelector extends LitElement {
 
       .mode-selector--disabled {
         opacity: 0.75;
+      }
+
+      @container (max-width: 380px) {
+        .mode-selector {
+          flex-direction: column;
+          align-items: flex-start;
+          justify-content: flex-start;
+          gap: 10px;
+        }
+
+        .mode-selector__segments {
+          width: 100%;
+          flex: 1 1 100%;
+        }
       }
     `,
   ];

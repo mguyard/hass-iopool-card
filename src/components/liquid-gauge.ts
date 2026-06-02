@@ -136,13 +136,14 @@ export class IopoolLiquidGauge extends LitElement {
     css`
       :host {
         display: block;
+        container-type: inline-size;
       }
 
       .iopool-liquid-gauge {
         position: relative;
         display: block;
-        aspect-ratio: 0.92;
-        border-radius: 22px;
+        aspect-ratio: 1;
+        border-radius: clamp(12px, 14cqi, 22px);
         overflow: hidden;
         background: var(--iopool-gauge-bg, #eaf4f2);
         border: 1px solid var(--divider-color, var(--iopool-divider));
@@ -157,50 +158,51 @@ export class IopoolLiquidGauge extends LitElement {
       }
 
       .iopool-liquid-gauge__label {
-        top: 14px;
-        left: 14px;
-        font-size: 10px;
+        top: clamp(8px, 9cqi, 14px);
+        left: clamp(8px, 9cqi, 14px);
+        font-size: clamp(7px, 6cqi, 10px);
         font-weight: 700;
         color: var(--secondary-text-color);
         letter-spacing: 0.08em;
       }
 
       .iopool-liquid-gauge__status {
-        top: 12px;
-        right: 12px;
-        font-size: 9px;
+        top: clamp(6px, 8cqi, 12px);
+        right: clamp(6px, 8cqi, 12px);
+        font-size: clamp(7px, 6cqi, 9px);
         font-weight: 700;
-        padding: 3px 7px;
+        padding: clamp(2px, 2cqi, 3px) clamp(4px, 4cqi, 7px);
         border-radius: 999px;
         backdrop-filter: blur(8px);
       }
 
       .iopool-liquid-gauge__status.status-ok {
-        background: rgba(126, 211, 33, 0.25);
-        color: #2d5a0a;
+        background: color-mix(in srgb, var(--iopool-green, #7ed321) 25%, transparent);
+        color: color-mix(in srgb, var(--iopool-green) 40%, black);
       }
 
       .iopool-liquid-gauge__status.status-warn {
-        background: rgba(245, 166, 35, 0.3);
-        color: #5a3d0a;
+        background: color-mix(in srgb, var(--iopool-orange, #f5a623) 30%, transparent);
+        color: color-mix(in srgb, var(--iopool-orange) 40%, black);
       }
 
       .iopool-liquid-gauge__status.status-bad {
-        background: rgba(208, 2, 27, 0.25);
-        color: #6a000f;
+        background: color-mix(in srgb, var(--iopool-red, #d0021b) 25%, transparent);
+        color: color-mix(in srgb, var(--iopool-red) 50%, black);
       }
 
       .iopool-liquid-gauge__value-wrap {
         position: absolute;
-        left: 14px;
-        right: 14px;
-        bottom: 22px;
+        left: clamp(8px, 9cqi, 14px);
+        right: clamp(8px, 9cqi, 14px);
+        bottom: clamp(12px, 14cqi, 22px);
+        padding-bottom: clamp(4px, 4cqi, 6px);
         z-index: 3;
         line-height: 1;
       }
 
       .iopool-liquid-gauge__value {
-        font-size: 26px;
+        font-size: clamp(14px, 16cqi, 26px);
         font-weight: 800;
         letter-spacing: -0.03em;
         color: var(--primary-text-color);
@@ -210,16 +212,16 @@ export class IopoolLiquidGauge extends LitElement {
       }
 
       .iopool-liquid-gauge__unit {
-        font-size: 13px;
+        font-size: clamp(8px, 8cqi, 13px);
         font-weight: 600;
         opacity: 0.65;
         color: var(--primary-text-color);
-        margin-left: 2px;
+        margin-left: clamp(1px, 1cqi, 2px);
       }
 
       .iopool-liquid-gauge__target {
-        margin-top: 6px;
-        font-size: 9px;
+        margin-top: clamp(3px, 4cqi, 6px);
+        font-size: clamp(7px, 6cqi, 9px);
         font-weight: 700;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -240,19 +242,19 @@ export class IopoolLiquidGauge extends LitElement {
       }
 
       .zone-ok {
-        color: #7ed321;
+        color: var(--iopool-green);
       }
 
       .zone-warn {
-        color: #f39c12;
+        color: var(--iopool-orange);
       }
 
       .zone-bad {
-        color: #e74c3c;
+        color: var(--iopool-red);
       }
 
       .zone-unknown {
-        color: #9e9e9e;
+        color: var(--iopool-neutral, #94a39e);
       }
 
       .iopool-liquid-gauge__wave--primary {

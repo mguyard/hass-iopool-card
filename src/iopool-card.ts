@@ -1,4 +1,4 @@
-import { LitElement, html } from 'lit';
+import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 // Register the visual editor custom element so HA discovers it via getConfigElement().
 import './iopool-card-editor';
@@ -32,6 +32,13 @@ import { DebugLogger } from './helpers/debug';
 import { resolvePoolName } from './helpers/pool-name';
 import { valueToZone, valueToFillPct, phToZone, orpToZone } from './helpers/zone';
 import { sharedStyles } from './styles';
+
+/**
+ * Module-level runtime state: persists user-selected chart period across HA tab navigation.
+ * Keyed by device_id so multiple pool cards work independently.
+ * Survives custom element destroy/recreate cycles because module scope outlives element instances.
+ */
+const _runtimeChartPeriod = new Map<string, 24 | 48 | 96 | 168>();
 
 @customElement('iopool-card')
 export class IopoolCard extends LitElement {
@@ -95,7 +102,10 @@ export class IopoolCard extends LitElement {
     const normalized: IopoolCardConfig = {
       ...config,
       show_chart: config.show_chart ?? true,
-      chart_period: config.chart_period ?? (DEFAULT_CHART_PERIOD as 24 | 48 | 96 | 168),
+      chart_period:
+        config.chart_period ??
+        _runtimeChartPeriod.get(config.device_id) ??
+        (DEFAULT_CHART_PERIOD as 24 | 48 | 96 | 168),
       debug: config.debug ?? false,
     };
 
@@ -139,7 +149,10 @@ export class IopoolCard extends LitElement {
   private get _displayFlags(): DisplayFlags {
     if (!this._hass || !this._config) {
       return {
-        showGauges: false,
+        showTempGauge: false,
+        showPhGauge: false,
+        showOrpGauge: false,
+        maintenanceSensors: [],
         showChart: false,
         showActionBadge: false,
         showMode: false,
@@ -148,6 +161,10 @@ export class IopoolCard extends LitElement {
         showBoost: false,
         isGrayed: false,
         warningBanner: null,
+        tempGaugeGrayed: false,
+        phGaugeGrayed: false,
+        orpGaugeGrayed: false,
+        chartGrayed: false,
       };
     }
 
@@ -159,27 +176,69 @@ export class IopoolCard extends LitElement {
     const iopoolMode = (modeState?.state ?? 'STANDARD') as IopoolMode;
     const poolMode = (poolModeState?.state ?? 'Standard') as PoolFilterMode;
 
-    const isStandard = iopoolMode === 'STANDARD' || iopoolMode === 'OPENING';
+    const isStandard = iopoolMode === 'STANDARD';
     const isPassiveWinter = iopoolMode === 'WINTER';
-    const isMaintenance = iopoolMode === 'MAINTENANCE';
+    const isOpening = iopoolMode === 'OPENING';
     const isInitialization = iopoolMode === 'INITIALIZATION';
-    const isGrayed = isMaintenance || isInitialization;
+    const isGrayed = isInitialization || isOpening;
 
     const hasPumpEntity =
       !!this._config.pump_entity && !!this._hass.states[this._config.pump_entity];
     const hasFiltrationEntity = !!this._entities?.filtration;
     const showChartConfig = this._config.show_chart !== false;
 
+    // Per-sensor maintenance check (only when NOT in initialization mode — INITIALIZATION takes priority)
+    const tempMeasureMode =
+      !isInitialization && this._entities?.temperature
+        ? (this._hass.states[this._entities.temperature]?.attributes?.['measure_mode'] as
+            | string
+            | undefined)
+        : undefined;
+    const phMeasureMode =
+      !isInitialization && this._entities?.ph
+        ? (this._hass.states[this._entities.ph]?.attributes?.['measure_mode'] as string | undefined)
+        : undefined;
+    const orpMeasureMode =
+      !isInitialization && this._entities?.orp
+        ? (this._hass.states[this._entities.orp]?.attributes?.['measure_mode'] as
+            | string
+            | undefined)
+        : undefined;
+
+    const tempInMaintenance = tempMeasureMode === 'maintenance';
+    const phInMaintenance = phMeasureMode === 'maintenance';
+    const orpInMaintenance = orpMeasureMode === 'maintenance';
+
+    const maintenanceSensors: Array<'temperature' | 'ph' | 'orp'> = [];
+    if (tempInMaintenance) maintenanceSensors.push('temperature');
+    if (phInMaintenance) maintenanceSensors.push('ph');
+    if (orpInMaintenance) maintenanceSensors.push('orp');
+
+    const baseShowGauges = isStandard || isGrayed;
+
     return {
-      showGauges: isStandard || isGrayed,
-      showChart: (isStandard || isGrayed) && showChartConfig,
+      showTempGauge: baseShowGauges,
+      showPhGauge: baseShowGauges,
+      showOrpGauge: baseShowGauges,
+      maintenanceSensors,
+      showChart: baseShowGauges && showChartConfig,
       showActionBadge: isStandard || isGrayed,
       showMode: true,
       showPump: hasPumpEntity && !isPassiveWinter,
       showFiltration: hasFiltrationEntity && !isPassiveWinter,
       showBoost: isStandard && poolMode === 'Standard',
       isGrayed,
-      warningBanner: isMaintenance ? 'maintenance' : isInitialization ? 'initialization' : null,
+      warningBanner: isInitialization
+        ? 'initialization'
+        : isOpening
+          ? 'opening'
+          : maintenanceSensors.length > 0
+            ? 'maintenance'
+            : null,
+      tempGaugeGrayed: isGrayed || tempInMaintenance,
+      phGaugeGrayed: isGrayed || phInMaintenance,
+      orpGaugeGrayed: isGrayed || orpInMaintenance,
+      chartGrayed: isGrayed || tempInMaintenance,
     };
   }
 
@@ -215,8 +274,6 @@ export class IopoolCard extends LitElement {
    */
   private _getDefaultAction(section: string): ActionConfig {
     switch (section) {
-      case 'pump':
-        return { action: 'toggle' };
       case 'mode':
       case 'boost':
       case 'chart':
@@ -339,6 +396,12 @@ export class IopoolCard extends LitElement {
     const device = this._hass.devices?.[this._config.device_id];
     const poolName = device ? resolvePoolName(device) : 'iopool';
 
+    // iopool probe mode (sensor entity state)
+    const modeEntityId = this._entities?.mode;
+    const iopoolMode = modeEntityId
+      ? ((this._hass.states[modeEntityId]?.state ?? 'STANDARD') as IopoolMode)
+      : ('STANDARD' as IopoolMode);
+
     // Pool filter mode (select entity): 'Standard' | 'Active-Winter' | 'Passive-Winter'
     const poolModeEntityId = this._entities?.poolMode;
     const poolModeState = poolModeEntityId
@@ -418,16 +481,13 @@ export class IopoolCard extends LitElement {
       ? (this._hass.states[boostEntityId]?.attributes?.['boost_end_time'] as string | undefined)
       : undefined;
 
-    // CSS modifier class for maintenance / initialization grayed-out state
-    const grayedClass = flags.isGrayed ? 'iopool-grayed' : '';
-
     return html`
       <ha-card>
         <div class="iopool-card">
           <!-- HEADER -->
           <iopool-header
             .poolName=${poolName}
-            .poolMode=${poolModeState}
+            .iopoolMode=${iopoolMode}
             .status=${headerStatus}
             .debugEnabled=${this._config.debug ?? false}
             .language=${lang}
@@ -439,6 +499,7 @@ export class IopoolCard extends LitElement {
                 <div class="iopool-section">
                   <iopool-warning-banner
                     .type=${flags.warningBanner}
+                    .sensors=${flags.maintenanceSensors}
                     .language=${lang}
                   ></iopool-warning-banner>
                 </div>
@@ -446,41 +507,57 @@ export class IopoolCard extends LitElement {
             : ''}
 
           <!-- GAUGES (temperature / pH / ORP) -->
-          ${flags.showGauges
+          ${flags.showTempGauge || flags.showPhGauge || flags.showOrpGauge
             ? html`
-                <div class="iopool-gauges ${grayedClass}">
-                  <iopool-liquid-gauge
-                    .label=${'TEMP.'}
-                    .value=${tempValue}
-                    .unit=${'°C'}
-                    .target=${tempTarget}
-                    .targetHigh=${thresholds[2]}
-                    .zone=${tempZone}
-                    .fillPercent=${tempFill}
-                    .language=${lang}
-                  ></iopool-liquid-gauge>
-
-                  <iopool-liquid-gauge
-                    .label=${'pH'}
-                    .value=${phValue}
-                    .unit=${''}
-                    .target=${PH_THRESHOLDS[1]}
-                    .targetHigh=${PH_THRESHOLDS[2]}
-                    .zone=${phZone}
-                    .fillPercent=${phFill}
-                    .language=${lang}
-                  ></iopool-liquid-gauge>
-
-                  <iopool-liquid-gauge
-                    .label=${'ORP'}
-                    .value=${orpValue}
-                    .unit=${'mV'}
-                    .target=${ORP_THRESHOLDS[1]}
-                    .targetHigh=${ORP_THRESHOLDS[2]}
-                    .zone=${orpZone}
-                    .fillPercent=${orpFill}
-                    .language=${lang}
-                  ></iopool-liquid-gauge>
+                <div class="iopool-gauges">
+                  ${flags.showTempGauge
+                    ? html`
+                        <iopool-liquid-gauge
+                          class="${flags.tempGaugeGrayed ? 'iopool-grayed' : ''}"
+                          .label=${'TEMP.'}
+                          .value=${tempValue}
+                          .unit=${'°C'}
+                          .target=${tempTarget}
+                          .targetHigh=${thresholds[2]}
+                          .zone=${tempZone}
+                          .fillPercent=${tempFill}
+                          .language=${lang}
+                          @click=${() => this._handleAction('temperature', 'tap')}
+                        ></iopool-liquid-gauge>
+                      `
+                    : ''}
+                  ${flags.showPhGauge
+                    ? html`
+                        <iopool-liquid-gauge
+                          class="${flags.phGaugeGrayed ? 'iopool-grayed' : ''}"
+                          .label=${'pH'}
+                          .value=${phValue}
+                          .unit=${''}
+                          .target=${PH_THRESHOLDS[1]}
+                          .targetHigh=${PH_THRESHOLDS[2]}
+                          .zone=${phZone}
+                          .fillPercent=${phFill}
+                          .language=${lang}
+                          @click=${() => this._handleAction('ph', 'tap')}
+                        ></iopool-liquid-gauge>
+                      `
+                    : ''}
+                  ${flags.showOrpGauge
+                    ? html`
+                        <iopool-liquid-gauge
+                          class="${flags.orpGaugeGrayed ? 'iopool-grayed' : ''}"
+                          .label=${'ORP'}
+                          .value=${orpValue}
+                          .unit=${'mV'}
+                          .target=${ORP_THRESHOLDS[1]}
+                          .targetHigh=${ORP_THRESHOLDS[2]}
+                          .zone=${orpZone}
+                          .fillPercent=${orpFill}
+                          .language=${lang}
+                          @click=${() => this._handleAction('orp', 'tap')}
+                        ></iopool-liquid-gauge>
+                      `
+                    : ''}
                 </div>
               `
             : ''}
@@ -488,7 +565,7 @@ export class IopoolCard extends LitElement {
           <!-- MODE SELECTOR -->
           ${flags.showMode
             ? html`
-                <div class="iopool-section ${grayedClass}">
+                <div class="iopool-section">
                   <iopool-mode-selector
                     .currentMode=${poolModeState}
                     .modeEntityId=${this._entities?.poolMode}
@@ -502,7 +579,7 @@ export class IopoolCard extends LitElement {
           <!-- PUMP PANEL (pump + filtration + boost) -->
           ${flags.showPump
             ? html`
-                <div class="iopool-section ${grayedClass}">
+                <div class="iopool-section">
                   <iopool-pump-panel
                     .pumpEntityId=${pumpEntityId}
                     .pumpState=${pumpState}
@@ -514,6 +591,8 @@ export class IopoolCard extends LitElement {
                     .currentOption=${flags.showBoost ? boostState : 'none'}
                     .endTime=${flags.showBoost ? boostEndTime : undefined}
                     .language=${lang}
+                    @pump-icon-tap=${() => this._handleAction('pump', 'tap')}
+                    @filtration-tap=${() => this._handleAction('filtration', 'tap')}
                   ></iopool-pump-panel>
                 </div>
               `
@@ -522,12 +601,13 @@ export class IopoolCard extends LitElement {
           <!-- TEMPERATURE CHART -->
           ${flags.showChart
             ? html`
-                <div class="iopool-section">
+                <div class="iopool-section ${flags.chartGrayed ? 'iopool-grayed' : ''}">
                   <iopool-temperature-chart
                     .entityId=${this._entities?.temperature}
                     .hass=${this._hass}
                     .period=${this._config.chart_period ?? DEFAULT_CHART_PERIOD}
                     .language=${lang}
+                    .thresholds=${thresholds}
                     @period-change=${this._handlePeriodChange}
                   ></iopool-temperature-chart>
                 </div>
@@ -546,11 +626,19 @@ export class IopoolCard extends LitElement {
   private _handlePeriodChange(ev: CustomEvent): void {
     if (!this._config) return;
     const period = ev.detail as 24 | 48 | 96 | 168;
+    _runtimeChartPeriod.set(this._config.device_id, period);
     this._config = { ...this._config, chart_period: period };
     this.requestUpdate();
   }
 
-  static override styles = [sharedStyles];
+  static override styles = [
+    sharedStyles,
+    css`
+      iopool-liquid-gauge {
+        cursor: pointer;
+      }
+    `,
+  ];
 }
 
 // --- HA card registration ---

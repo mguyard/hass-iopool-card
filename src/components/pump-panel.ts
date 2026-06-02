@@ -109,6 +109,11 @@ export class IopoolPumpPanel extends LitElement {
     void this.hass.callService('switch', 'toggle', { entity_id: this.pumpEntityId });
   }
 
+  private _handlePumpIconTap(ev: Event): void {
+    ev.stopPropagation();
+    this.dispatchEvent(new CustomEvent('pump-icon-tap', { bubbles: true, composed: true }));
+  }
+
   // ── Boost helpers ─────────────────────────────────────────────────────────
 
   private get _isBoostActive(): boolean {
@@ -177,7 +182,10 @@ export class IopoolPumpPanel extends LitElement {
     return html`
       <div class="pump-panel__pump">
         <div class="pump-panel__pump-summary">
-          <div class="pump-panel__icon pump-panel__icon--${stateKey}">
+          <div
+            class="pump-panel__icon pump-panel__icon--${stateKey}"
+            @click=${this._handlePumpIconTap}
+          >
             <ha-icon
               icon=${stateKey === 'off' ? 'mdi:water-boiler-off' : 'mdi:water-boiler'}
             ></ha-icon>
@@ -225,7 +233,7 @@ export class IopoolPumpPanel extends LitElement {
         : 'pump-panel__filtration-fill--blue';
 
     return html`
-      <div class="pump-panel__filtration">
+      <div class="pump-panel__filtration" @click=${this._handleFiltrationTap}>
         <div class="pump-panel__filtration-header">
           <span class="pump-panel__label">
             ${t(this.language, 'filtration.daily_filtration')}
@@ -265,6 +273,10 @@ export class IopoolPumpPanel extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _handleFiltrationTap(): void {
+    this.dispatchEvent(new CustomEvent('filtration-tap', { bubbles: true, composed: true }));
   }
 
   private _renderBoostSection() {
@@ -358,7 +370,7 @@ export class IopoolPumpPanel extends LitElement {
         display: flex;
         flex-direction: column;
         width: 100%;
-        padding: 14px 16px;
+        padding: 10px 16px;
         border-radius: 18px;
         background: var(--iopool-surface);
       }
@@ -366,7 +378,10 @@ export class IopoolPumpPanel extends LitElement {
       /* ── Divider between sections ── */
       .pump-panel__divider {
         height: 1px;
-        background: var(--divider-color, rgba(148, 163, 158, 0.18));
+        background: var(
+          --divider-color,
+          color-mix(in srgb, var(--iopool-neutral, #94a39e) 18%, transparent)
+        );
         margin: 10px 0;
       }
 
@@ -395,8 +410,8 @@ export class IopoolPumpPanel extends LitElement {
       }
 
       .pump-panel__icon {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 12px;
         display: inline-flex;
         align-items: center;
@@ -406,13 +421,13 @@ export class IopoolPumpPanel extends LitElement {
       }
 
       .pump-panel__icon--on {
-        background: rgba(126, 211, 33, 0.14);
+        background: color-mix(in srgb, var(--iopool-green, #7ed321) 14%, transparent);
         color: var(--iopool-green, #7ed321);
-        box-shadow: 0 4px 10px rgba(126, 211, 33, 0.2);
+        box-shadow: 0 4px 10px color-mix(in srgb, var(--iopool-green, #7ed321) 20%, transparent);
       }
 
       .pump-panel__icon--off {
-        background: rgba(208, 2, 27, 0.12);
+        background: color-mix(in srgb, var(--iopool-red, #d0021b) 12%, transparent);
         color: var(--iopool-red, #d0021b);
         box-shadow: none;
       }
@@ -461,7 +476,7 @@ export class IopoolPumpPanel extends LitElement {
         padding: 3px;
         border: 0;
         border-radius: 999px;
-        background: rgba(148, 163, 158, 0.3);
+        background: color-mix(in srgb, var(--iopool-neutral, #94a39e) 30%, transparent);
         cursor: pointer;
         transition:
           background-color 0.18s ease,
@@ -503,6 +518,14 @@ export class IopoolPumpPanel extends LitElement {
         gap: 10px;
       }
 
+      .pump-panel__icon {
+        cursor: pointer;
+      }
+
+      .pump-panel__filtration {
+        cursor: pointer;
+      }
+
       .pump-panel__filtration-header {
         display: flex;
         align-items: center;
@@ -523,9 +546,9 @@ export class IopoolPumpPanel extends LitElement {
 
       .pump-panel__filtration-bar {
         width: 100%;
-        height: 12px;
+        height: 10px;
         border-radius: 999px;
-        background: rgba(148, 163, 158, 0.18);
+        background: color-mix(in srgb, var(--iopool-neutral, #94a39e) 18%, transparent);
         overflow: hidden;
       }
 
@@ -537,15 +560,23 @@ export class IopoolPumpPanel extends LitElement {
       }
 
       .pump-panel__filtration-fill--blue {
-        background: linear-gradient(90deg, #4bcffa 0%, #17817a 100%);
+        background: linear-gradient(
+          90deg,
+          var(--iopool-treatments) 0%,
+          var(--iopool-primary-dark) 100%
+        );
       }
 
       .pump-panel__filtration-fill--green {
-        background: linear-gradient(90deg, #7ed321 0%, #56a618 100%);
+        background: linear-gradient(
+          90deg,
+          var(--iopool-green) 0%,
+          color-mix(in srgb, var(--iopool-green) 70%, black) 100%
+        );
       }
 
       .pump-panel__filtration-fill--muted {
-        background: rgba(148, 163, 158, 0.42);
+        background: color-mix(in srgb, var(--iopool-neutral, #94a39e) 42%, transparent);
       }
 
       /* ── Filtration stats row (3 columns) ── */
@@ -607,7 +638,7 @@ export class IopoolPumpPanel extends LitElement {
       }
 
       .pump-panel__boost-btn {
-        height: 32px;
+        height: 28px;
         border-radius: 9px;
         background: var(--card-background-color, #fff);
         border: 1px solid var(--divider-color, var(--iopool-divider));
@@ -640,7 +671,7 @@ export class IopoolPumpPanel extends LitElement {
         background: var(--iopool-green, #7ed321);
         color: #fff;
         border-color: transparent;
-        box-shadow: 0 2px 8px rgba(126, 211, 33, 0.3);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--iopool-green, #7ed321) 30%, transparent);
       }
 
       .pump-panel__boost-countdown {

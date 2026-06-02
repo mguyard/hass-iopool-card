@@ -55,27 +55,27 @@ describe('valueToZone', () => {
 
 describe('zoneToColor', () => {
   it('returns red color for red-low', () => {
-    expect(zoneToColor('red-low')).toBe('#e74c3c');
+    expect(zoneToColor('red-low')).toBe('var(--iopool-red, #d0021b)');
   });
 
   it('returns red color for red-high', () => {
-    expect(zoneToColor('red-high')).toBe('#e74c3c');
+    expect(zoneToColor('red-high')).toBe('var(--iopool-red, #d0021b)');
   });
 
   it('returns orange color for yellow-low', () => {
-    expect(zoneToColor('yellow-low')).toBe('#f39c12');
+    expect(zoneToColor('yellow-low')).toBe('var(--iopool-orange, #f5a623)');
   });
 
   it('returns orange color for yellow-high', () => {
-    expect(zoneToColor('yellow-high')).toBe('#f39c12');
+    expect(zoneToColor('yellow-high')).toBe('var(--iopool-orange, #f5a623)');
   });
 
   it('returns green color for ok zone', () => {
-    expect(zoneToColor('ok')).toBe('#7ED321');
+    expect(zoneToColor('ok')).toBe('var(--iopool-green, #7ed321)');
   });
 
   it('returns gray color for unknown zone', () => {
-    expect(zoneToColor('unknown')).toBe('#9e9e9e');
+    expect(zoneToColor('unknown')).toBe('var(--iopool-neutral, #94a39e)');
   });
 
   it('red-low and red-high have the same color', () => {

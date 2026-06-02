@@ -77,6 +77,51 @@ Use this after project familiarization / onboarding runs:
 - timestamp: 2026-05-27
 - author: GitHub Copilot
 
+## Editor Chip Button Hover State — 2026-05-29
+
+### Facts
+- The editor stylesheet in [src/iopool-card-editor.ts](src/iopool-card-editor.ts) defines `.chip-btn` styles for preset/filter chips.
+- The active chip state now uses `color: #fff !important` and `-webkit-text-fill-color: #fff` so the active label stays white in WebKit-based browsers.
+- The hover rule now excludes `.chip-btn--active` via `.chip-btn:hover:not(.chip-btn--active)` and also sets `-webkit-text-fill-color` to the primary color for non-active hover states.
+
+### Decision
+- Preserve the active chip's white text styling during hover, and scope hover styling to non-active chips only.
+
+### Consequences
+- Future edits to editor chip styles should keep the hover selector exclusion and the WebKit text-fill overrides unless the visual behavior is intentionally changed.
+
+### Citations
+- [src/iopool-card-editor.ts](src/iopool-card-editor.ts)
+- [src/iopool-card-editor.test.ts](src/iopool-card-editor.test.ts)
+
+### memory_meta
+- timestamp: 2026-05-29
+- author: GitHub Copilot
+
+## Editor Stays Side-Effect Free — 2026-06-03
+
+### Facts
+- [src/iopool-card-editor.ts](src/iopool-card-editor.ts) now keeps `setConfig()` limited to assigning `_config` and clearing `_validationError`.
+- The editor no longer exposes auto-detect state or lifecycle hooks for pump lookup, and it no longer calls `callWS` for config entry inspection.
+- [src/types.ts](src/types.ts) no longer declares `HomeAssistant.callWS` or `DeviceRegistryEntry.config_entries`.
+- The matching auto-detection tests were removed from [src/iopool-card-editor.test.ts](src/iopool-card-editor.test.ts).
+
+### Decision
+- Keep the editor config flow synchronous and user-driven: configuration changes should validate and dispatch, without hidden pump auto-detection side effects.
+
+### Consequences
+- Future editor changes should not reintroduce config-entry probing or deferred state keyed off `hass` availability.
+- Tests for the editor should focus on explicit validation and dispatch behavior only.
+
+### Citations
+- [src/iopool-card-editor.ts](src/iopool-card-editor.ts)
+- [src/types.ts](src/types.ts)
+- [src/iopool-card-editor.test.ts](src/iopool-card-editor.test.ts)
+
+### memory_meta
+- timestamp: 2026-06-03
+- author: GitHub Copilot
+
 ## Onboarding Snapshot — 2026-05-27
 
 ### Facts

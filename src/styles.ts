@@ -26,6 +26,7 @@ export const sharedStyles = css`
     --iopool-green: #7ed321;
     --iopool-orange: #f5a623;
     --iopool-red: #d0021b;
+    --iopool-neutral: #94a39e;
     --iopool-grad-button: linear-gradient(135deg, #51afe7 0%, #62d2c6 100%);
     --iopool-grad-main: linear-gradient(180deg, #42bdaa 0%, #2c7c70 100%);
     --iopool-gauge-bg: #eaf4f2;
@@ -55,10 +56,10 @@ export const sharedStyles = css`
   /* === Section container === */
 
   .iopool-section {
-    padding: 0 20px 20px;
+    padding: 0 12px 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
 
   /* === Error state === */
@@ -129,9 +130,9 @@ export const sharedStyles = css`
 
   .iopool-gauges {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     gap: 12px;
-    padding: 20px;
+    padding: 12px;
   }
 
   /* === Grayed-out state (MAINTENANCE / INITIALIZATION) === */

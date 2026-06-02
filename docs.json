@@ -1,8 +1,25 @@
 {
+  "$schema": "https://docs.page/schema.json",
   "name": "iopool Card",
-  "logo": "docs/assets/logo-light.svg",
-  "logoDark": "docs/assets/logo-dark.svg",
-  "favicon": "docs/assets/favicon.png",
+  "description": "Documentation for the iopool card to use with iopool integration in Home Assistant",
+  "logo": {
+    "light": "https://brands.home-assistant.io/_/iopool/icon@2x.png"
+  },
+  "favicon": {
+    "light": "https://brands.home-assistant.io/_/iopool/icon@2x.png"
+  },
+  "theme": {
+    "defaultTheme": "dark",
+    "primary": "#17817A",
+    "primaryLight": "#43D1CD"
+  },
+  "tabs": [
+    {
+      "id": "root",
+      "title": "Home",
+      "href": "/"
+    }
+  ],
   "sidebar": [
     { "group": "Getting Started", "pages": ["introduction", "installation", "first-card"] },
     {
@@ -42,5 +59,8 @@
       "group": "Troubleshooting",
       "pages": ["troubleshooting/debug-mode", "troubleshooting/common-issues"]
     }
-  ]
+  ],
+  "social": {
+    "github": "mguyard/hass-iopool-card"
+  }
 }

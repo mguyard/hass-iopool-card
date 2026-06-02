@@ -22,15 +22,15 @@ export function zoneToColor(zone: Zone): string {
   switch (zone) {
     case 'red-low':
     case 'red-high':
-      return '#e74c3c';
+      return 'var(--iopool-red, #d0021b)';
     case 'yellow-low':
     case 'yellow-high':
-      return '#f39c12';
+      return 'var(--iopool-orange, #f5a623)';
     case 'ok':
-      return '#7ED321';
+      return 'var(--iopool-green, #7ed321)';
     default:
       // 'unknown' — unavailable/loading state
-      return '#9e9e9e';
+      return 'var(--iopool-neutral, #94a39e)';
   }
 }
 

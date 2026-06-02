@@ -16,7 +16,7 @@ export const PH_THRESHOLDS: TemperatureThresholds = [6.8, 7.1, 7.7, 8.1];
 export const ORP_THRESHOLDS: TemperatureThresholds = [550, 650, 800, 1000];
 
 // Default chart display period in hours
-export const DEFAULT_CHART_PERIOD = 96;
+export const DEFAULT_CHART_PERIOD = 24;
 
 // Entity map — maps logical roles to iopool integration entity suffixes (SPECIFICATIONS §5.6)
 // EntityMapEntry.platform is the entity domain prefix (sensor, binary_sensor, select)

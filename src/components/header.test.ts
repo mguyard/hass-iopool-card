@@ -16,21 +16,24 @@ function createHeader(overrides: Partial<HTMLElement> = {}): HTMLElement {
 
 describe('iopool-header', () => {
   it('renders the pool name', async () => {
-    const element = createHeader({ poolName: 'Bazemont' } as unknown as Partial<HTMLElement>);
+    const element = createHeader({ poolName: 'MyPool' } as unknown as Partial<HTMLElement>);
     await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
 
-    expect(element.shadowRoot?.textContent).toContain('Bazemont');
+    expect(element.shadowRoot?.textContent).toContain('MyPool');
   });
 
   it('renders the correct mode badge icon for each mode', async () => {
     const cases = [
-      ['Standard', 'mdi:white-balance-sunny'],
-      ['Active-Winter', 'mdi:sun-snowflake-variant'],
-      ['Passive-Winter', 'mdi:snowflake'],
+      ['STANDARD', 'mdi:white-balance-sunny'],
+      ['ACTIVE_WINTER', 'mdi:sun-snowflake-variant'],
+      ['WINTER', 'mdi:snowflake'],
+      ['OPENING', 'mdi:pool'],
+      ['INITIALIZATION', 'mdi:progress-clock'],
+      ['MAINTENANCE', 'mdi:wrench'],
     ] as const;
 
     for (const [mode, icon] of cases) {
-      const element = createHeader({ poolMode: mode } as unknown as Partial<HTMLElement>);
+      const element = createHeader({ iopoolMode: mode } as unknown as Partial<HTMLElement>);
       await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
 
       expect(element.shadowRoot?.querySelector(`ha-icon[icon="${icon}"]`)).toBeTruthy();

@@ -84,8 +84,8 @@ describe('ORP_THRESHOLDS', () => {
 });
 
 describe('DEFAULT_CHART_PERIOD', () => {
-  it('is 96 hours', () => {
-    expect(DEFAULT_CHART_PERIOD).toBe(96);
+  it('is 24 hours', () => {
+    expect(DEFAULT_CHART_PERIOD).toBe(24);
   });
 });
 

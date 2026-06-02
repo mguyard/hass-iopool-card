@@ -12,13 +12,17 @@ nextTitle: Common issues
 Enable debug mode in YAML only:
 
 ```yaml
-debug: true
+debug: true // [!code highlight]
 ```
 
-When enabled, the card prints lifecycle and data-resolution details in the browser console.
+When enabled, the card logs device resolution, the resolved entity map, chart loading, and section action execution in the browser console.
+
+Debug mode is not available in the visual editor, so it must be set in YAML.
 
 <Info>
-  Debug mode is useful when verifying device resolution, chart loading, or action behavior.
+  Open browser DevTools with F12, then switch to the Console tab to inspect the logs.
 </Info>
+
+Turn debug mode off after troubleshooting. Leaving it enabled can add noise to the console and slightly affect performance.
 
 <Image src="/assets/screenshots/placeholder-debug-console.png" alt="Debug console placeholder" />

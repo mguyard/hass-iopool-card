@@ -6,6 +6,20 @@ import type {
   DisplayFlags,
   HassEntity,
 } from './types';
+
+// Mock ApexCharts — jsdom lacks SVG browser APIs (ResizeObserver, getTotalLength, etc.).
+// Without this mock, iopool-temperature-chart rendered inside iopool-card would throw
+// unhandled rejections when the real ApexCharts tries to call new ResizeObserver().
+vi.mock('apexcharts', () => {
+  const MockApexCharts = vi.fn().mockImplementation(() => ({
+    render: vi.fn().mockResolvedValue(undefined),
+    updateSeries: vi.fn().mockResolvedValue(undefined),
+    updateOptions: vi.fn().mockResolvedValue(undefined),
+    destroy: vi.fn(),
+  }));
+  return { default: MockApexCharts };
+});
+
 // Import triggers custom element registration and window.customCards population.
 import { IopoolCard } from './iopool-card';
 
@@ -114,10 +128,10 @@ describe('IopoolCard.setConfig — defaults', () => {
     expect(getConfig(card).show_chart).toBe(true);
   });
 
-  it('sets chart_period to 96 when not provided', () => {
+  it('sets chart_period to 24 when not provided', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
-    expect(getConfig(card).chart_period).toBe(96);
+    expect(getConfig(card).chart_period).toBe(24);
   });
 
   it('sets debug to false when not provided', () => {
@@ -293,7 +307,7 @@ describe('IopoolCard.render', () => {
     expect(() => (card as unknown as { render: () => unknown }).render()).not.toThrow();
   });
 
-  it('does not throw when mode is MAINTENANCE (isGrayed path)', () => {
+  it('does not throw when mode is MAINTENANCE', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
     const modeEntityId = 'sensor.iopool_test_iopool_mode';
@@ -346,7 +360,10 @@ describe('IopoolCard._displayFlags', () => {
   it('returns all-false flags when neither hass nor config is set', () => {
     const card = new IopoolCard();
     const flags = getFlags(card);
-    expect(flags.showGauges).toBe(false);
+    expect(flags.showTempGauge).toBe(false);
+    expect(flags.showPhGauge).toBe(false);
+    expect(flags.showOrpGauge).toBe(false);
+    expect(flags.maintenanceSensors).toEqual([]);
     expect(flags.showChart).toBe(false);
     expect(flags.showMode).toBe(false);
     expect(flags.showPump).toBe(false);
@@ -354,18 +371,10 @@ describe('IopoolCard._displayFlags', () => {
     expect(flags.showBoost).toBe(false);
     expect(flags.isGrayed).toBe(false);
     expect(flags.warningBanner).toBeNull();
-  });
-
-  it('returns warningBanner=maintenance when iopool mode is MAINTENANCE', () => {
-    const card = new IopoolCard();
-    card.setConfig(VALID_CONFIG);
-    const modeId = 'sensor.iopool_test_iopool_mode';
-    setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(
-      card,
-      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }),
-    );
-    expect(getFlags(card).warningBanner).toBe('maintenance');
+    expect(flags.tempGaugeGrayed).toBe(false);
+    expect(flags.phGaugeGrayed).toBe(false);
+    expect(flags.orpGaugeGrayed).toBe(false);
+    expect(flags.chartGrayed).toBe(false);
   });
 
   it('returns warningBanner=initialization when iopool mode is INITIALIZATION', () => {
@@ -380,18 +389,6 @@ describe('IopoolCard._displayFlags', () => {
     expect(getFlags(card).warningBanner).toBe('initialization');
   });
 
-  it('returns isGrayed=true for MAINTENANCE mode', () => {
-    const card = new IopoolCard();
-    card.setConfig(VALID_CONFIG);
-    const modeId = 'sensor.iopool_test_iopool_mode';
-    setPrivateEntities(card, { mode: modeId });
-    setPrivateHass(
-      card,
-      buildMockHass({ states: { [modeId]: makeHassState(modeId, 'MAINTENANCE') } }),
-    );
-    expect(getFlags(card).isGrayed).toBe(true);
-  });
-
   it('returns isGrayed=true for INITIALIZATION mode', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
@@ -404,7 +401,7 @@ describe('IopoolCard._displayFlags', () => {
     expect(getFlags(card).isGrayed).toBe(true);
   });
 
-  it('returns showGauges=false in ACTIVE_WINTER mode', () => {
+  it('returns showTempGauge/showPhGauge/showOrpGauge=false in ACTIVE_WINTER mode', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
@@ -413,19 +410,23 @@ describe('IopoolCard._displayFlags', () => {
       card,
       buildMockHass({ states: { [modeId]: makeHassState(modeId, 'ACTIVE_WINTER') } }),
     );
-    expect(getFlags(card).showGauges).toBe(false);
+    expect(getFlags(card).showTempGauge).toBe(false);
+    expect(getFlags(card).showPhGauge).toBe(false);
+    expect(getFlags(card).showOrpGauge).toBe(false);
   });
 
-  it('returns showGauges=false in WINTER (passive) mode', () => {
+  it('returns showTempGauge/showPhGauge/showOrpGauge=false in WINTER (passive) mode', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
     setPrivateEntities(card, { mode: modeId });
     setPrivateHass(card, buildMockHass({ states: { [modeId]: makeHassState(modeId, 'WINTER') } }));
-    expect(getFlags(card).showGauges).toBe(false);
+    expect(getFlags(card).showTempGauge).toBe(false);
+    expect(getFlags(card).showPhGauge).toBe(false);
+    expect(getFlags(card).showOrpGauge).toBe(false);
   });
 
-  it('returns showGauges=true in STANDARD mode', () => {
+  it('returns showTempGauge/showPhGauge/showOrpGauge=true in STANDARD mode', () => {
     const card = new IopoolCard();
     card.setConfig(VALID_CONFIG);
     const modeId = 'sensor.iopool_test_iopool_mode';
@@ -434,7 +435,212 @@ describe('IopoolCard._displayFlags', () => {
       card,
       buildMockHass({ states: { [modeId]: makeHassState(modeId, 'STANDARD') } }),
     );
-    expect(getFlags(card).showGauges).toBe(true);
+    expect(getFlags(card).showTempGauge).toBe(true);
+    expect(getFlags(card).showPhGauge).toBe(true);
+    expect(getFlags(card).showOrpGauge).toBe(true);
+  });
+
+  describe('IopoolCard._displayFlags — per-sensor maintenance', () => {
+    it('returns maintenanceSensors=[] when no sensor has measure_mode maintenance', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const tempId = 'sensor.iopool_test_temperature';
+      setPrivateEntities(card, { mode: modeId, temperature: tempId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [tempId]: makeHassState(tempId, '28.5', { measure_mode: 'manual' }),
+          },
+        }),
+      );
+      expect(getFlags(card).maintenanceSensors).toEqual([]);
+    });
+
+    it('returns warningBanner=maintenance and maintenanceSensors=[temperature] when temperature measure_mode is maintenance', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const tempId = 'sensor.iopool_test_temperature';
+      setPrivateEntities(card, { mode: modeId, temperature: tempId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [tempId]: makeHassState(tempId, '28.5', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      const flags = getFlags(card);
+      expect(flags.warningBanner).toBe('maintenance');
+      expect(flags.maintenanceSensors).toEqual(['temperature']);
+    });
+
+    it('returns tempGaugeGrayed=true and chartGrayed=true when temperature is in maintenance', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const tempId = 'sensor.iopool_test_temperature';
+      setPrivateEntities(card, { mode: modeId, temperature: tempId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [tempId]: makeHassState(tempId, '28.5', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      const flags = getFlags(card);
+      expect(flags.showTempGauge).toBe(true); // shown but grayed
+      expect(flags.tempGaugeGrayed).toBe(true);
+      expect(flags.showChart).toBe(true); // shown but grayed
+      expect(flags.chartGrayed).toBe(true);
+    });
+
+    it('returns phGaugeGrayed=true and orpGaugeGrayed=true when pH and ORP are in maintenance', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const phId = 'sensor.iopool_test_ph';
+      const orpId = 'sensor.iopool_test_orp';
+      setPrivateEntities(card, { mode: modeId, ph: phId, orp: orpId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [phId]: makeHassState(phId, '7.2', { measure_mode: 'maintenance' }),
+            [orpId]: makeHassState(orpId, '700', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      const flags = getFlags(card);
+      expect(flags.phGaugeGrayed).toBe(true);
+      expect(flags.orpGaugeGrayed).toBe(true);
+      expect(flags.showPhGauge).toBe(true); // shown but grayed
+      expect(flags.showOrpGauge).toBe(true); // shown but grayed
+      expect(flags.tempGaugeGrayed).toBe(false);
+      expect(flags.maintenanceSensors).toEqual(['ph', 'orp']);
+    });
+
+    it('returns showChart=true when only pH is in maintenance (temperature not in maintenance)', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const phId = 'sensor.iopool_test_ph';
+      setPrivateEntities(card, { mode: modeId, ph: phId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [phId]: makeHassState(phId, '7.2', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      expect(getFlags(card).showChart).toBe(true);
+    });
+
+    it('INITIALIZATION takes priority: gauge not hidden by maintenance, isGrayed=true, warningBanner=initialization', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const tempId = 'sensor.iopool_test_temperature';
+      setPrivateEntities(card, { mode: modeId, temperature: tempId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'INITIALIZATION'),
+            [tempId]: makeHassState(tempId, '28.5', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      const flags = getFlags(card);
+      expect(flags.isGrayed).toBe(true);
+      expect(flags.warningBanner).toBe('initialization');
+      expect(flags.maintenanceSensors).toEqual([]);
+      // Temperature gauge still shown (grayed, not hidden)
+      expect(flags.showTempGauge).toBe(true);
+    });
+
+    it('isGrayed=false when only measure_mode is maintenance (not INITIALIZATION)', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      const tempId = 'sensor.iopool_test_temperature';
+      setPrivateEntities(card, { mode: modeId, temperature: tempId });
+      setPrivateHass(
+        card,
+        buildMockHass({
+          states: {
+            [modeId]: makeHassState(modeId, 'STANDARD'),
+            [tempId]: makeHassState(tempId, '28.5', { measure_mode: 'maintenance' }),
+          },
+        }),
+      );
+      expect(getFlags(card).isGrayed).toBe(false);
+    });
+  });
+
+  describe('IopoolCard._displayFlags — OPENING mode', () => {
+    it('returns isGrayed=true for OPENING mode', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      setPrivateEntities(card, { mode: modeId });
+      setPrivateHass(
+        card,
+        buildMockHass({ states: { [modeId]: makeHassState(modeId, 'OPENING') } }),
+      );
+      expect(getFlags(card).isGrayed).toBe(true);
+    });
+
+    it('returns warningBanner=opening for OPENING mode', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      setPrivateEntities(card, { mode: modeId });
+      setPrivateHass(
+        card,
+        buildMockHass({ states: { [modeId]: makeHassState(modeId, 'OPENING') } }),
+      );
+      expect(getFlags(card).warningBanner).toBe('opening');
+    });
+
+    it('returns showTempGauge/showPhGauge/showOrpGauge=true for OPENING (grayed, not hidden)', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      setPrivateEntities(card, { mode: modeId });
+      setPrivateHass(
+        card,
+        buildMockHass({ states: { [modeId]: makeHassState(modeId, 'OPENING') } }),
+      );
+      const flags = getFlags(card);
+      expect(flags.showTempGauge).toBe(true);
+      expect(flags.showPhGauge).toBe(true);
+      expect(flags.showOrpGauge).toBe(true);
+      expect(flags.tempGaugeGrayed).toBe(true);
+      expect(flags.phGaugeGrayed).toBe(true);
+      expect(flags.orpGaugeGrayed).toBe(true);
+    });
+
+    it('returns showBoost=false for OPENING mode', () => {
+      const card = new IopoolCard();
+      card.setConfig(VALID_CONFIG);
+      const modeId = 'sensor.iopool_test_iopool_mode';
+      setPrivateEntities(card, { mode: modeId });
+      setPrivateHass(
+        card,
+        buildMockHass({ states: { [modeId]: makeHassState(modeId, 'OPENING') } }),
+      );
+      expect(getFlags(card).showBoost).toBe(false);
+    });
   });
 
   it('returns showFiltration=true when mode is ACTIVE_WINTER (filtration runs during active winter)', () => {
@@ -580,5 +786,201 @@ describe('IopoolCard._handlePeriodChange', () => {
     const card = new IopoolCard();
     // Should not throw when config is not set.
     expect(() => callPeriodChange(card, 24)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _getDefaultAction
+// ---------------------------------------------------------------------------
+
+describe('IopoolCard._getDefaultAction', () => {
+  function getDefaultAction(card: IopoolCard, section: string): { action: string } {
+    return (
+      card as unknown as { _getDefaultAction: (s: string) => { action: string } }
+    )._getDefaultAction(section);
+  }
+
+  it('returns more-info for temperature', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'temperature').action).toBe('more-info');
+  });
+
+  it('returns more-info for ph', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'ph').action).toBe('more-info');
+  });
+
+  it('returns more-info for orp', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'orp').action).toBe('more-info');
+  });
+
+  it('returns more-info for pump (not toggle)', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'pump').action).toBe('more-info');
+  });
+
+  it('returns more-info for filtration', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'filtration').action).toBe('more-info');
+  });
+
+  it('returns none for mode', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'mode').action).toBe('none');
+  });
+
+  it('returns none for boost', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'boost').action).toBe('none');
+  });
+
+  it('returns none for chart', () => {
+    const card = new IopoolCard();
+    expect(getDefaultAction(card, 'chart').action).toBe('none');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Gauge @click → _handleAction
+// ---------------------------------------------------------------------------
+
+describe('IopoolCard — gauge click → _handleAction', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function mountCard(): HTMLElement & { updateComplete: Promise<boolean> } {
+    const element = document.createElement('iopool-card');
+    document.body.append(element);
+    return element as HTMLElement & { updateComplete: Promise<boolean> };
+  }
+
+  function buildStandardHass(): HomeAssistant {
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    return buildMockHass({
+      states: { [modeId]: makeHassState(modeId, 'STANDARD') },
+    });
+  }
+
+  it('calls _handleAction("temperature", "tap") when the temperature gauge is clicked', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig(VALID_CONFIG);
+    card.hass = buildStandardHass();
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: 'sensor.iopool_test_iopool_mode',
+    };
+    await element.updateComplete;
+
+    const spy = vi.spyOn(
+      card as unknown as { _handleAction: (...args: unknown[]) => void },
+      '_handleAction',
+    );
+    const gauges = element.shadowRoot?.querySelectorAll('iopool-liquid-gauge');
+    gauges?.[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(spy).toHaveBeenCalledWith('temperature', 'tap');
+  });
+
+  it('calls _handleAction("ph", "tap") when the pH gauge is clicked', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig(VALID_CONFIG);
+    card.hass = buildStandardHass();
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: 'sensor.iopool_test_iopool_mode',
+    };
+    await element.updateComplete;
+
+    const spy = vi.spyOn(
+      card as unknown as { _handleAction: (...args: unknown[]) => void },
+      '_handleAction',
+    );
+    const gauges = element.shadowRoot?.querySelectorAll('iopool-liquid-gauge');
+    gauges?.[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(spy).toHaveBeenCalledWith('ph', 'tap');
+  });
+
+  it('calls _handleAction("orp", "tap") when the ORP gauge is clicked', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig(VALID_CONFIG);
+    card.hass = buildStandardHass();
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: 'sensor.iopool_test_iopool_mode',
+    };
+    await element.updateComplete;
+
+    const spy = vi.spyOn(
+      card as unknown as { _handleAction: (...args: unknown[]) => void },
+      '_handleAction',
+    );
+    const gauges = element.shadowRoot?.querySelectorAll('iopool-liquid-gauge');
+    gauges?.[2]?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    expect(spy).toHaveBeenCalledWith('orp', 'tap');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pump-panel events → _handleAction
+// ---------------------------------------------------------------------------
+
+describe('IopoolCard — pump-panel events → _handleAction', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function mountCard(): HTMLElement & { updateComplete: Promise<boolean> } {
+    const element = document.createElement('iopool-card');
+    document.body.append(element);
+    return element as HTMLElement & { updateComplete: Promise<boolean> };
+  }
+
+  function buildPumpHass(): HomeAssistant {
+    const modeId = 'sensor.iopool_test_iopool_mode';
+    return buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'STANDARD'),
+        'switch.pool_pump': makeHassState('switch.pool_pump', 'off'),
+      },
+    });
+  }
+
+  it('calls _handleAction("pump", "tap") when pump-icon-tap fires from pump-panel', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig({ ...VALID_CONFIG, pump_entity: 'switch.pool_pump' });
+    card.hass = buildPumpHass();
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: 'sensor.iopool_test_iopool_mode',
+    };
+    await element.updateComplete;
+
+    const spy = vi.spyOn(
+      card as unknown as { _handleAction: (...args: unknown[]) => void },
+      '_handleAction',
+    );
+    const pumpPanel = element.shadowRoot?.querySelector('iopool-pump-panel');
+    pumpPanel?.dispatchEvent(new CustomEvent('pump-icon-tap', { bubbles: true, composed: true }));
+    expect(spy).toHaveBeenCalledWith('pump', 'tap');
+  });
+
+  it('calls _handleAction("filtration", "tap") when filtration-tap fires from pump-panel', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig({ ...VALID_CONFIG, pump_entity: 'switch.pool_pump' });
+    card.hass = buildPumpHass();
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: 'sensor.iopool_test_iopool_mode',
+    };
+    await element.updateComplete;
+
+    const spy = vi.spyOn(
+      card as unknown as { _handleAction: (...args: unknown[]) => void },
+      '_handleAction',
+    );
+    const pumpPanel = element.shadowRoot?.querySelector('iopool-pump-panel');
+    pumpPanel?.dispatchEvent(new CustomEvent('filtration-tap', { bubbles: true, composed: true }));
+    expect(spy).toHaveBeenCalledWith('filtration', 'tap');
   });
 });

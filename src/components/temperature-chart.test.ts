@@ -1,10 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ApexCharts from 'apexcharts';
 import type { HomeAssistant, TemperaturePoint } from '../types';
 
 // vi.mock is hoisted, so this mock is active before any imports resolve
 vi.mock('../helpers/history', () => ({
   fetchTemperatureHistory: vi.fn(),
 }));
+
+/**
+ * Mock ApexCharts — jsdom lacks SVG browser APIs (getTotalLength, etc.).
+ * The mock exposes the chart event callbacks so tests can simulate mouseMove/mouseLeave.
+ */
+vi.mock('apexcharts', () => {
+  const MockApexCharts = vi.fn().mockImplementation((_el: unknown, options: unknown) => {
+    // Store the options so tests can extract chart event callbacks.
+    (MockApexCharts as unknown as { _lastOptions: unknown })._lastOptions = options;
+    return {
+      render: vi.fn().mockResolvedValue(undefined),
+      updateSeries: vi.fn().mockResolvedValue(undefined),
+      updateOptions: vi.fn().mockResolvedValue(undefined),
+      destroy: vi.fn(),
+    };
+  });
+  (MockApexCharts as unknown as { _lastOptions: unknown })._lastOptions = null;
+  return { default: MockApexCharts };
+});
 
 import './temperature-chart';
 import { fetchTemperatureHistory } from '../helpers/history';
@@ -14,6 +34,27 @@ type TemperatureChartElement = HTMLElement & {
   period?: number;
   hass?: HomeAssistant;
   entityId?: string;
+  _hoveredPoint: { x: number; y: number } | null;
+  _hoveredDotPos: { x: number; y: number } | null;
+  _seriesData: { x: number; y: number }[];
+};
+
+type MockApexChartsType = ReturnType<typeof vi.fn> & {
+  _lastOptions: {
+    chart?: {
+      events?: {
+        mouseMove?: (event: MouseEvent, chartCtx: unknown, config: unknown) => void;
+        mouseLeave?: () => void;
+      };
+    };
+  };
+};
+
+type MockInstance = {
+  render: ReturnType<typeof vi.fn>;
+  updateSeries: ReturnType<typeof vi.fn>;
+  updateOptions: ReturnType<typeof vi.fn>;
+  destroy: ReturnType<typeof vi.fn>;
 };
 
 function clearDom(): void {
@@ -23,6 +64,7 @@ function clearDom(): void {
 beforeEach(() => {
   clearDom();
   vi.mocked(fetchTemperatureHistory).mockResolvedValue([]);
+  vi.mocked(ApexCharts).mockClear();
 });
 
 function createHass(overrides: Partial<HomeAssistant> = {}): HomeAssistant {
@@ -41,7 +83,7 @@ function createElement(overrides: Record<string, unknown> = {}): TemperatureChar
   const element = document.createElement('iopool-temperature-chart');
   Object.assign(element, overrides);
   document.body.append(element);
-  return element as TemperatureChartElement;
+  return element as unknown as TemperatureChartElement;
 }
 
 /** Flush all pending promises / microtasks (allows mocked async fns to resolve). */
@@ -64,7 +106,138 @@ function makeMockData(): TemperaturePoint[] {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('iopool-temperature-chart', () => {
-  it('renders all 4 period buttons (24h, 48h, 96h, 7d)', async () => {
+  it('creates the ApexCharts instance and calls render on mount', async () => {
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+
+    const MockAC = vi.mocked(ApexCharts);
+    expect(MockAC).toHaveBeenCalledTimes(1);
+    const instance = MockAC.mock.results[0]?.value as MockInstance;
+    expect(instance.render).toHaveBeenCalled();
+  });
+
+  it('calls updateSeries after data loads', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    const instance = vi.mocked(ApexCharts).mock.results[0]?.value as MockInstance;
+    expect(instance.updateSeries).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'Temperature', data: expect.any(Array) }),
+    ]);
+  });
+
+  it('destroys the ApexCharts instance when element is removed', async () => {
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+
+    const instance = vi.mocked(ApexCharts).mock.results[0]?.value as MockInstance;
+    element.remove();
+    expect(instance.destroy).toHaveBeenCalled();
+  });
+
+  it('shows hovered point temperature when _hoveredPoint is set directly', async () => {
+    const hass = createHass({
+      states: {
+        'sensor.pool_temp': {
+          entity_id: 'sensor.pool_temp',
+          state: '22.5',
+          attributes: {},
+          last_changed: new Date().toISOString(),
+          last_updated: new Date().toISOString(),
+        },
+      },
+    });
+    const element = createElement({ hass, entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.textContent).toContain('22.5');
+    expect(element._hoveredPoint).toBeNull();
+
+    const pointTimestamp = Date.now() - 3600_000;
+    element._hoveredPoint = { x: pointTimestamp, y: 24.0 };
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.textContent).toContain('24.0');
+    const pointDate = element.shadowRoot?.querySelector('.temperature-chart__point-date');
+    expect(pointDate?.textContent?.trim()).not.toBe('');
+
+    element._hoveredPoint = null;
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.textContent).toContain('22.5');
+    const pointDateAfter = element.shadowRoot?.querySelector('.temperature-chart__point-date');
+    expect(pointDateAfter?.textContent?.trim()).toBe('');
+  });
+
+  it('mouseMove event callback finds nearest point from mouse X position', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    const MockAC = vi.mocked(ApexCharts) as unknown as MockApexChartsType;
+    const events = MockAC._lastOptions?.chart?.events;
+    expect(events?.mouseMove).toBeDefined();
+
+    // jsdom: getBoundingClientRect() returns left=0, so mouseX = clientX - translateX
+    // Set clientX=5, translateX=0, gridWidth=200, spanning the full series time range
+    const seriesData = element._seriesData;
+    expect(seriesData.length).toBeGreaterThan(0);
+
+    const mockChartCtx = {
+      w: {
+        globals: {
+          translateX: 0,
+          translateY: 0,
+          gridWidth: 200,
+          gridHeight: 100,
+          minX: seriesData[0]!.x,
+          maxX: seriesData[seriesData.length - 1]!.x,
+        },
+      },
+    };
+
+    // clientX=5 → mouseX=5 → xFraction=0.025 → nearest = index 0 in 2D pixel space
+    const mockEvent = { clientX: 5, clientY: 50 } as MouseEvent;
+    events?.mouseMove?.(mockEvent, mockChartCtx, {});
+    await element.updateComplete;
+
+    expect(element._hoveredPoint).not.toBeNull();
+    expect(element._hoveredPoint?.y).toBeCloseTo(24.0); // first data point value
+
+    // _hoveredDotPos should also be set (pixel position computed from stored Y range)
+    expect(element._hoveredDotPos).not.toBeNull();
+  });
+
+  it('mouseLeave event callback clears _hoveredPoint', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    element._hoveredPoint = { x: Date.now(), y: 25.0 };
+    element._hoveredDotPos = { x: 50, y: 30 };
+    await element.updateComplete;
+
+    const MockAC = vi.mocked(ApexCharts) as unknown as MockApexChartsType;
+    const events = MockAC._lastOptions?.chart?.events;
+    events?.mouseLeave?.();
+    await element.updateComplete;
+
+    expect(element._hoveredPoint).toBeNull();
+    expect(element._hoveredDotPos).toBeNull();
+  });
+
+  it('renders 4 period buttons', async () => {
     const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
     await element.updateComplete;
 
@@ -117,7 +290,7 @@ describe('iopool-temperature-chart', () => {
     expect(lastCall?.[2]).toBe(24);
   });
 
-  it('renders the SVG chart area when data is returned', async () => {
+  it('renders the ApexCharts container when data is returned', async () => {
     vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
 
     const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp', period: 96 });
@@ -125,13 +298,12 @@ describe('iopool-temperature-chart', () => {
     await flushAsync();
     await element.updateComplete;
 
-    const svg = element.shadowRoot?.querySelector('svg.chart-svg');
-    expect(svg).toBeTruthy();
+    // The ApexCharts container div must be present in the shadow DOM.
+    const apexWrap = element.shadowRoot?.querySelector('.temperature-chart__apex-wrap');
+    expect(apexWrap).toBeTruthy();
 
-    const areaPath = element.shadowRoot?.querySelector('.chart-area');
-    const linePath = element.shadowRoot?.querySelector('.chart-line');
-    expect(areaPath).toBeTruthy();
-    expect(linePath).toBeTruthy();
+    const apexContainer = element.shadowRoot?.querySelector('#apex-chart');
+    expect(apexContainer).toBeTruthy();
   });
 
   it('renders gracefully (no crash) when data is empty', async () => {
@@ -142,11 +314,9 @@ describe('iopool-temperature-chart', () => {
     await flushAsync();
     await element.updateComplete;
 
-    // SVG must still be present
-    expect(element.shadowRoot?.querySelector('svg.chart-svg')).toBeTruthy();
-    // No area/line paths (nothing to draw)
-    expect(element.shadowRoot?.querySelector('.chart-area')).toBeNull();
-    expect(element.shadowRoot?.querySelector('.chart-line')).toBeNull();
+    // The ApexCharts container must still be present even with no data.
+    expect(element.shadowRoot?.querySelector('#apex-chart')).toBeTruthy();
+    expect(element.shadowRoot?.querySelector('.temperature-chart__apex-wrap')).toBeTruthy();
   });
 
   it('shows min, avg, max stats in the stats bar', async () => {
@@ -213,8 +383,8 @@ describe('iopool-temperature-chart', () => {
     await flushAsync();
     await element.updateComplete;
 
-    // Must not throw; SVG must still render
-    expect(element.shadowRoot?.querySelector('svg.chart-svg')).toBeTruthy();
+    // Must not throw; ApexCharts container must still be present.
+    expect(element.shadowRoot?.querySelector('#apex-chart')).toBeTruthy();
 
     // Data should be treated as empty → stat values show '--'
     const statValues = Array.from(element.shadowRoot?.querySelectorAll('.stat__value') ?? []).map(
@@ -239,5 +409,40 @@ describe('iopool-temperature-chart', () => {
     await element.updateComplete;
 
     expect(vi.mocked(fetchTemperatureHistory).mock.calls.length).toBe(callsAfterInit);
+  });
+
+  it('tooltip is disabled in chart options (no native ApexCharts tooltip)', async () => {
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+
+    const opts = vi.mocked(ApexCharts).mock.calls[0]?.[1] as Record<string, unknown>;
+    const tooltip = opts?.tooltip as Record<string, unknown> | undefined;
+    expect(tooltip?.enabled).toBe(false);
+  });
+
+  it('renders the hover dot element when _hoveredPoint and _hoveredDotPos are set', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.temperature-chart__hover-dot')).toBeNull();
+
+    element._hoveredPoint = { x: Date.now(), y: 25.0 };
+    element._hoveredDotPos = { x: 50, y: 30 };
+    await element.updateComplete;
+
+    const dot = element.shadowRoot?.querySelector('.temperature-chart__hover-dot');
+    expect(dot).not.toBeNull();
+    const style = (dot as HTMLElement).style;
+    expect(style.left).toBe('50px');
+    expect(style.top).toBe('30px');
+
+    element._hoveredPoint = null;
+    element._hoveredDotPos = null;
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.temperature-chart__hover-dot')).toBeNull();
   });
 });

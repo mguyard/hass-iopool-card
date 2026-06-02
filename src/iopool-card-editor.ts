@@ -7,7 +7,7 @@ import type {
   SectionActions,
   TemperatureThresholds,
 } from './types';
-import { DEFAULT_POOL_THRESHOLDS, DEFAULT_SPA_THRESHOLDS } from './const';
+import { DEFAULT_CHART_PERIOD, DEFAULT_POOL_THRESHOLDS, DEFAULT_SPA_THRESHOLDS } from './const';
 import { validateThresholds } from './helpers/thresholds';
 import en from './locales/en.json';
 import fr from './locales/fr.json';
@@ -40,16 +40,7 @@ interface SchemaEntry {
   selector: Record<string, unknown>;
 }
 
-const SECTION_KEYS = [
-  'temperature',
-  'ph',
-  'orp',
-  'mode',
-  'pump',
-  'filtration',
-  'boost',
-  'chart',
-] as const;
+const SECTION_KEYS = ['temperature', 'ph', 'orp', 'pump', 'filtration'] as const;
 
 type SectionKey = (typeof SECTION_KEYS)[number];
 
@@ -80,7 +71,6 @@ export class IopoolCardEditor extends LitElement {
   // ha-form schema for the main configuration fields.
   // Defined as a getter so chart_period labels update when language changes.
   private get _schema(): SchemaEntry[] {
-    const lang = this._lang;
     return [
       {
         name: 'device_id',
@@ -95,23 +85,6 @@ export class IopoolCardEditor extends LitElement {
         name: 'pump_entity',
         selector: {
           entity: { domain: 'switch' },
-        },
-      },
-      {
-        name: 'show_chart',
-        selector: { boolean: {} },
-      },
-      {
-        name: 'chart_period',
-        selector: {
-          select: {
-            options: [
-              { value: 24, label: t(lang, 'chart.period_24h') },
-              { value: 48, label: t(lang, 'chart.period_48h') },
-              { value: 96, label: t(lang, 'chart.period_96h') },
-              { value: 168, label: t(lang, 'chart.period_7d') },
-            ],
-          },
         },
       },
     ];
@@ -143,7 +116,7 @@ export class IopoolCardEditor extends LitElement {
     );
   }
 
-  // Called when ha-form fires value-changed (device, pump, show_chart, chart_period).
+  // Called when ha-form fires value-changed (device_id, pump_entity).
   private _valueChanged(ev: CustomEvent<{ value: IopoolCardConfig }>): void {
     const newConfig = ev.detail.value;
 
@@ -217,6 +190,83 @@ export class IopoolCardEditor extends LitElement {
     });
   }
 
+  // Stable empty-label function — suppresses ha-form's built-in label so the
+  // surrounding .field-header provides the label and description instead.
+  // TypeScript accepts () => string as assignable to (schema: SchemaEntry) => string
+  // because functions with fewer parameters are structurally compatible.
+  private readonly _emptyLabel = (): string => '';
+
+  private _showChartChanged(ev: CustomEvent<{ value: boolean }>): void {
+    if (!this._config) return;
+    this._dispatchConfig({ ...this._config, show_chart: ev.detail.value });
+  }
+
+  private _chartPeriodChanged(period: 24 | 48 | 96 | 168): void {
+    if (!this._config) return;
+    this._dispatchConfig({ ...this._config, chart_period: period });
+  }
+
+  private _periodLabel(period: number, lang: string): string {
+    if (period === 168) return t(lang, 'chart.period_7d');
+    return t(lang, `chart.period_${period}h`);
+  }
+
+  private _thresholdZonePcts(
+    thresholds: TemperatureThresholds,
+  ): [number, number, number, number, number] {
+    const RED_PCT = 15;
+    const INNER_PCT = 70; // remaining 70% shared by the 3 inner zones
+    const [t0, t1, t2, t3] = thresholds;
+    const dOrange1 = Math.max(0, t1 - t0);
+    const dGreen = Math.max(0, t2 - t1);
+    const dOrange2 = Math.max(0, t3 - t2);
+    const innerTotal = dOrange1 + dGreen + dOrange2 || 1;
+    const scale = INNER_PCT / innerTotal;
+    return [RED_PCT, dOrange1 * scale, dGreen * scale, dOrange2 * scale, RED_PCT];
+  }
+
+  private _renderThresholdBar(thresholds: TemperatureThresholds, lang: string) {
+    const [p0, p1, p2, p3, p4] = this._thresholdZonePcts(thresholds);
+    const zoneColors = [
+      'zone-red',
+      'zone-orange',
+      'zone-green',
+      'zone-orange',
+      'zone-red',
+    ] as const;
+    const pcts = [p0, p1, p2, p3, p4];
+    const zoneLabels = [
+      t(lang, 'status.too_low'),
+      t(lang, 'status.low'),
+      t(lang, 'status.ideal'),
+      t(lang, 'status.high'),
+      t(lang, 'status.too_high'),
+    ];
+    return html`
+      <div class="threshold-visual">
+        <div class="threshold-bar">
+          ${pcts.map(
+            (pct, idx) => html`
+              <div class="threshold-zone ${zoneColors[idx]}" style="width: ${pct}%"></div>
+            `,
+          )}
+        </div>
+        <div class="threshold-zone-labels">
+          ${pcts.map(
+            (pct, idx) => html`
+              <span
+                class="zone-label"
+                style="width: ${pct}%; min-width: 0;"
+                title="${zoneLabels[idx]}"
+                >${zoneLabels[idx]}</span
+              >
+            `,
+          )}
+        </div>
+      </div>
+    `;
+  }
+
   protected override render() {
     if (!this._config) return html``;
 
@@ -224,51 +274,137 @@ export class IopoolCardEditor extends LitElement {
     const thresholds: TemperatureThresholds =
       this._config.temperature_thresholds ?? DEFAULT_POOL_THRESHOLDS;
 
+    // Per-field schemas — full _config is still passed as data so ha-form emits
+    // the complete config object with the changed field updated.
+    const deviceSchema = this._schema.filter((f) => f.name === 'device_id');
+    const pumpSchema = this._schema.filter((f) => f.name === 'pump_entity');
+
     return html`
       <div class="editor">
-        <!-- Main form: device, pump entity, show_chart, chart_period -->
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${this._schema}
-          .computeLabel=${this._computeLabel.bind(this)}
-          @value-changed=${this._valueChanged}
-        ></ha-form>
-
-        <!-- Temperature thresholds section -->
-        <div class="section-title">${t(lang, 'editor.temperature_thresholds')}</div>
-
-        <div class="presets">
-          <button class="preset-btn" @click=${() => this._applyPreset('pool')}>
-            ${t(lang, 'editor.preset_pool')}
-          </button>
-          <button class="preset-btn" @click=${() => this._applyPreset('spa')}>
-            ${t(lang, 'editor.preset_spa')}
-          </button>
+        <!-- device_id field -->
+        <div class="editor-field">
+          <div class="field-header">
+            <span class="field-title">${t(lang, 'editor.device_id')}</span>
+            <span class="field-description">${t(lang, 'editor.device_id_description')}</span>
+          </div>
+          <ha-form
+            .hass=${this.hass}
+            .data=${this._config}
+            .schema=${deviceSchema}
+            .computeLabel=${this._emptyLabel}
+            @value-changed=${this._valueChanged}
+          ></ha-form>
         </div>
 
-        <div class="thresholds-grid">
-          ${THRESHOLD_INDICES.map(
-            (i) => html`
-              <div class="threshold-field">
-                <label>${this._computeLabel({ name: String(i) })}</label>
+        <!-- pump_entity field -->
+        <div class="editor-field">
+          <div class="field-header">
+            <span class="field-title">${t(lang, 'editor.pump_entity')}</span>
+            <span class="field-description">${t(lang, 'editor.pump_entity_description')}</span>
+          </div>
+          <ha-form
+            .hass=${this.hass}
+            .data=${this._config}
+            .schema=${pumpSchema}
+            .computeLabel=${this._emptyLabel}
+            @value-changed=${this._valueChanged}
+          ></ha-form>
+        </div>
+
+        <!-- Temperature collapsible section -->
+        <details class="section-temperature">
+          <summary>
+            <ha-icon icon="mdi:coolant-temperature"></ha-icon>
+            ${t(lang, 'editor.temperature_section')}
+          </summary>
+          <div class="temperature-content">
+            <!-- Temperature thresholds -->
+            <div class="editor-field">
+              <div class="field-header">
+                <span class="field-title">${t(lang, 'editor.temperature_thresholds')}</span>
+                <span class="field-description"
+                  >${t(lang, 'editor.temperature_thresholds_description')}</span
+                >
+              </div>
+              <div class="presets">
+                <button class="preset-btn" @click=${() => this._applyPreset('pool')}>
+                  ${t(lang, 'editor.preset_pool')}
+                </button>
+                <button class="preset-btn" @click=${() => this._applyPreset('spa')}>
+                  ${t(lang, 'editor.preset_spa')}
+                </button>
+              </div>
+              ${this._renderThresholdBar(thresholds, lang)}
+              <div class="thresholds-grid">
+                ${THRESHOLD_INDICES.map(
+                  (i) => html`
+                    <div class="threshold-field">
+                      <div class="threshold-field-label">
+                        <span class="threshold-indicator threshold-indicator-${i}"></span>
+                        <label>${this._computeLabel({ name: String(i) })}</label>
+                      </div>
+                      <ha-selector
+                        .hass=${this.hass}
+                        .selector=${{ number: { min: -20, max: 50, step: 0.5, mode: 'box' } }}
+                        .value=${thresholds[i]}
+                        @value-changed=${(ev: CustomEvent<{ value: number }>) =>
+                          this._thresholdChanged(i, ev.detail.value)}
+                      ></ha-selector>
+                    </div>
+                  `,
+                )}
+              </div>
+            </div>
+
+            <!-- show_chart field -->
+            <div class="editor-field show-chart-field">
+              <div class="show-chart-row">
+                <div class="field-header">
+                  <span class="field-title">${t(lang, 'editor.show_chart')}</span>
+                  <span class="field-description">${t(lang, 'editor.show_chart_description')}</span>
+                </div>
                 <ha-selector
                   .hass=${this.hass}
-                  .selector=${{ number: { min: -20, max: 50, step: 0.5, mode: 'box' } }}
-                  .value=${thresholds[i]}
-                  @value-changed=${(ev: CustomEvent<{ value: number }>) =>
-                    this._thresholdChanged(i, ev.detail.value)}
+                  .selector=${{ boolean: {} }}
+                  .value=${this._config.show_chart ?? true}
+                  @value-changed=${this._showChartChanged}
                 ></ha-selector>
               </div>
-            `,
-          )}
-        </div>
+            </div>
+
+            <!-- chart_period field -->
+            <div class="editor-field">
+              <div class="field-header">
+                <span class="field-title">${t(lang, 'editor.chart_period')}</span>
+                <span class="field-description">${t(lang, 'editor.chart_period_description')}</span>
+              </div>
+              <div class="period-chips">
+                ${([24, 48, 96, 168] as const).map(
+                  (period) => html`
+                    <button
+                      class="chip-btn ${(this._config!.chart_period ?? DEFAULT_CHART_PERIOD) ===
+                      period
+                        ? 'chip-btn--active'
+                        : ''}"
+                      @click=${() => this._chartPeriodChanged(period)}
+                    >
+                      ${this._periodLabel(period, lang)}
+                    </button>
+                  `,
+                )}
+              </div>
+            </div>
+          </div>
+        </details>
 
         ${this._validationError ? html`<p class="error">${this._validationError}</p>` : ''}
 
-        <!-- Section actions — collapsible to avoid overwhelming the editor -->
+        <!-- Section actions (Interactions) — collapsible -->
         <details class="section-actions">
-          <summary>${t(lang, 'editor.section_actions')}</summary>
+          <summary>
+            <ha-icon icon="mdi:gesture-double-tap"></ha-icon>
+            ${t(lang, 'editor.section_actions')}
+          </summary>
           <div class="actions-content">
             ${SECTION_KEYS.map((section) => this._renderSectionActions(section))}
           </div>
@@ -283,21 +419,20 @@ export class IopoolCardEditor extends LitElement {
 
     return html`
       <div class="section-action-group">
-        <div class="section-action-title">${section}</div>
-        ${(
-          [
-            ['tap_action', 'editor.tap_action'],
-            ['hold_action', 'editor.hold_action'],
-            ['double_tap_action', 'editor.double_tap_action'],
-          ] as const
-        ).map(
+        <div class="section-action-header">
+          <div class="section-action-title">${t(lang, `editor.section_${section}_title`)}</div>
+          <div class="section-action-description">
+            ${t(lang, `editor.section_${section}_description`)}
+          </div>
+        </div>
+        ${([['tap_action', 'editor.tap_action']] as const).map(
           ([actionKey, labelKey]) => html`
             <div class="action-row">
               <label>${t(lang, labelKey)}</label>
               <ha-selector
                 .hass=${this.hass}
                 .selector=${{ ui_action: {} }}
-                .value=${sectionActions[actionKey] ?? { action: 'none' }}
+                .value=${sectionActions[actionKey] ?? { action: 'more-info' }}
                 @value-changed=${(ev: CustomEvent<{ value: ActionConfig }>) =>
                   this._sectionActionChanged(section, actionKey, ev)}
               ></ha-selector>
@@ -325,6 +460,7 @@ export class IopoolCardEditor extends LitElement {
     .presets {
       display: flex;
       gap: 8px;
+      margin: 12px 0;
     }
 
     .preset-btn {
@@ -348,17 +484,169 @@ export class IopoolCardEditor extends LitElement {
       border-color: var(--iopool-primary, #17817a);
     }
 
+    /* Threshold visual bar */
+    .threshold-visual {
+      margin: 8px 0 12px;
+    }
+
+    .threshold-bar {
+      display: flex;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .threshold-zone {
+      transition: width 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .zone-red {
+      background: var(--iopool-red, #d0021b);
+    }
+    .zone-orange {
+      background: var(--iopool-orange, #f5a623);
+    }
+    .zone-green {
+      background: var(--iopool-green, #7ed321);
+    }
+
+    .threshold-zone-labels {
+      display: flex;
+      margin-top: 4px;
+    }
+
+    .zone-label {
+      font-size: 10px;
+      color: var(--secondary-text-color);
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Threshold inputs grid */
     .thresholds-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    .threshold-field label {
+    .threshold-field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .threshold-field-label label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
+
+    /* Bicolor circle indicators showing the zone transition at each threshold */
+    .threshold-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .threshold-indicator-0 {
+      background: linear-gradient(
+        to right,
+        var(--iopool-red, #d0021b) 50%,
+        var(--iopool-orange, #f5a623) 50%
+      );
+    }
+    .threshold-indicator-1 {
+      background: linear-gradient(
+        to right,
+        var(--iopool-orange, #f5a623) 50%,
+        var(--iopool-green, #7ed321) 50%
+      );
+    }
+    .threshold-indicator-2 {
+      background: linear-gradient(
+        to right,
+        var(--iopool-green, #7ed321) 50%,
+        var(--iopool-orange, #f5a623) 50%
+      );
+    }
+    .threshold-indicator-3 {
+      background: linear-gradient(
+        to right,
+        var(--iopool-orange, #f5a623) 50%,
+        var(--iopool-red, #d0021b) 50%
+      );
+    }
+
+    .editor-field {
+      margin-bottom: 16px;
+    }
+
+    .field-header {
+      margin-bottom: 8px;
+    }
+
+    .field-title {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--primary-text-color);
+    }
+
+    .field-description {
       display: block;
       font-size: 12px;
       color: var(--secondary-text-color);
-      margin-bottom: 4px;
+      margin-top: 2px;
+    }
+
+    .show-chart-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .show-chart-field .field-header {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .period-chips {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chip-btn {
+      flex: 1;
+      padding: 6px 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 20px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition:
+        background 0.2s,
+        border-color 0.2s;
+    }
+
+    .chip-btn:hover:not(.chip-btn--active) {
+      border-color: var(--iopool-primary, #17817a);
+      color: var(--iopool-primary, #17817a);
+      -webkit-text-fill-color: var(--iopool-primary, #17817a);
+    }
+
+    .chip-btn--active {
+      background: var(--iopool-primary, #17817a);
+      color: #fff !important;
+      -webkit-text-fill-color: #fff;
+      border-color: var(--iopool-primary, #17817a);
     }
 
     .error {
@@ -367,18 +655,43 @@ export class IopoolCardEditor extends LitElement {
       margin: 0;
     }
 
-    .section-actions {
+    .section-temperature {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 8px;
       padding: 8px 12px;
     }
 
+    .section-temperature summary,
     .section-actions summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       padding: 4px 0;
       user-select: none;
+    }
+
+    .section-temperature summary ha-icon,
+    .section-actions summary ha-icon {
+      --mdc-icon-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: var(--secondary-text-color);
+    }
+
+    .temperature-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .section-actions {
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      padding: 8px 12px;
     }
 
     .actions-content {
@@ -393,12 +706,21 @@ export class IopoolCardEditor extends LitElement {
       padding-top: 12px;
     }
 
+    .section-action-header {
+      margin-bottom: 8px;
+    }
+
     .section-action-title {
       font-size: 12px;
       font-weight: 700;
       text-transform: uppercase;
+      color: var(--primary-text-color);
+    }
+
+    .section-action-description {
+      font-size: 11px;
       color: var(--secondary-text-color);
-      margin-bottom: 8px;
+      margin-top: 2px;
     }
 
     .action-row {

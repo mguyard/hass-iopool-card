@@ -4,7 +4,13 @@ import en from '../locales/en.json';
 import fr from '../locales/fr.json';
 import { sharedStyles } from '../styles';
 
-type PoolMode = 'Standard' | 'Active-Winter' | 'Passive-Winter';
+type IopoolProbeMode =
+  | 'STANDARD'
+  | 'OPENING'
+  | 'ACTIVE_WINTER'
+  | 'WINTER'
+  | 'INITIALIZATION'
+  | 'MAINTENANCE';
 type HeaderStatus = 'ok' | 'action_recommended' | 'action_required';
 
 const LOCALES: Record<string, Record<string, unknown>> = {
@@ -26,19 +32,25 @@ function t(lang: string, key: string): string {
 
 function getModeIcon(mode: string): string {
   switch (mode) {
-    case 'Active-Winter':
+    case 'ACTIVE_WINTER':
       return 'mdi:sun-snowflake-variant';
-    case 'Passive-Winter':
+    case 'WINTER':
       return 'mdi:snowflake';
-    case 'Standard':
+    case 'OPENING':
+      return 'mdi:pool';
+    case 'INITIALIZATION':
+      return 'mdi:progress-clock';
+    case 'MAINTENANCE':
+      return 'mdi:wrench';
+    case 'STANDARD':
     default:
       return 'mdi:white-balance-sunny';
   }
 }
 
 function getModeLabel(mode: string, language: string): string {
-  const label = t(language, `pool_mode.${mode}`);
-  return label === `pool_mode.${mode}` ? mode : label;
+  const label = t(language, `iopool_mode.${mode}`);
+  return label === `iopool_mode.${mode}` ? mode : label;
 }
 
 function getStatusLabel(status: HeaderStatus, language: string): string {
@@ -69,7 +81,7 @@ function getStatusClass(status: HeaderStatus): 'ok' | 'warn' | 'err' {
 export class IopoolHeader extends LitElement {
   @property({ type: String }) poolName = '';
 
-  @property({ type: String }) poolMode: PoolMode | string = 'Standard';
+  @property({ type: String }) iopoolMode: IopoolProbeMode | string = 'STANDARD';
 
   @property({ type: String }) status: HeaderStatus = 'ok';
 
@@ -89,7 +101,7 @@ export class IopoolHeader extends LitElement {
         justify-content: space-between;
         align-items: flex-start;
         gap: 16px;
-        padding: 22px 20px 18px;
+        padding: 16px 20px 12px;
         border-bottom: 1px solid var(--divider-color, var(--iopool-divider));
       }
 
@@ -149,31 +161,31 @@ export class IopoolHeader extends LitElement {
       }
 
       .iopool-header__badge--ok {
-        background: rgba(126, 211, 33, 0.16);
-        color: #4d8a0e;
+        background: color-mix(in srgb, var(--iopool-green, #7ed321) 16%, transparent);
+        color: color-mix(in srgb, var(--iopool-green) 60%, black);
       }
 
       .iopool-header__badge--warn {
-        background: rgba(245, 166, 35, 0.18);
-        color: #9c6a14;
+        background: color-mix(in srgb, var(--iopool-orange, #f5a623) 18%, transparent);
+        color: color-mix(in srgb, var(--iopool-orange) 65%, black);
       }
 
       .iopool-header__badge--err {
-        background: rgba(208, 2, 27, 0.13);
-        color: #a3001a;
+        background: color-mix(in srgb, var(--iopool-red, #d0021b) 13%, transparent);
+        color: color-mix(in srgb, var(--iopool-red) 75%, black);
       }
 
       .iopool-header__badge--debug {
-        background: rgba(23, 129, 122, 0.1);
+        background: color-mix(in srgb, var(--iopool-primary, #17817a) 10%, transparent);
         color: var(--iopool-primary, #17817a);
-        border: 1px solid rgba(23, 129, 122, 0.18);
+        border: 1px solid color-mix(in srgb, var(--iopool-primary, #17817a) 18%, transparent);
       }
     `,
   ];
 
   override render() {
     const name = this.poolName.trim() || t(this.language, 'card.default_name');
-    const modeLabel = getModeLabel(this.poolMode, this.language);
+    const modeLabel = getModeLabel(this.iopoolMode, this.language);
     const statusClass = getStatusClass(this.status);
 
     return html`
@@ -185,7 +197,7 @@ export class IopoolHeader extends LitElement {
 
         <div class="iopool-header__badges" aria-label="iopool card status badges">
           <div class="iopool-header__badge iopool-header__badge--mode">
-            <ha-icon icon=${getModeIcon(this.poolMode)}></ha-icon>
+            <ha-icon icon=${getModeIcon(this.iopoolMode)}></ha-icon>
             <span>${modeLabel}</span>
           </div>
 

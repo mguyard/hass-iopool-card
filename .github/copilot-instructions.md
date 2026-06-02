@@ -41,8 +41,8 @@ src/
 - Entity map cached in `setConfig()`, invalidated only if `device_id` changes — never recomputed in `set hass()` or `render()`.
 - Pool name: `device.name_by_user ?? device.name ?? 'iopool'` — re-evaluated on every render.
 - Icons: always `<ha-icon icon="mdi:xxx">` — no external icon libraries or SVG sprites.
-- Charts: pure SVG — no Chart.js, D3, ApexCharts, or external chart libraries.
-- Zero runtime deps beyond Lit (bundled into `dist/iopool-card.js`).
+- Charts: ApexCharts 5.13.0 (bundled) for the temperature chart — no Chart.js, D3, or other chart libraries. No CDN or window.ApexCharts global.
+- Runtime deps: Lit + ApexCharts 5.13.0 (bundled into `dist/iopool-card.js`). No other runtime deps.
 
 ## Quick Start — Key Commands
 

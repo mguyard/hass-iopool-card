@@ -79,8 +79,6 @@ export interface ActionConfig {
 
 export interface SectionActions {
   tap_action?: ActionConfig;
-  hold_action?: ActionConfig;
-  double_tap_action?: ActionConfig;
 }
 
 // Main card YAML configuration
@@ -141,7 +139,10 @@ export interface ResolvedEntities {
 
 // Computed display flags (derived from probe mode + config)
 export interface DisplayFlags {
-  showGauges: boolean;
+  showTempGauge: boolean;
+  showPhGauge: boolean;
+  showOrpGauge: boolean;
+  maintenanceSensors: Array<'temperature' | 'ph' | 'orp'>;
   showChart: boolean;
   showActionBadge: boolean;
   showMode: boolean;
@@ -149,7 +150,11 @@ export interface DisplayFlags {
   showFiltration: boolean;
   showBoost: boolean;
   isGrayed: boolean;
-  warningBanner: 'maintenance' | 'initialization' | null;
+  warningBanner: 'maintenance' | 'initialization' | 'opening' | null;
+  tempGaugeGrayed: boolean;
+  phGaugeGrayed: boolean;
+  orpGaugeGrayed: boolean;
+  chartGrayed: boolean;
 }
 
 // Boost countdown status

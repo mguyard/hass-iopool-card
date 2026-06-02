@@ -4,7 +4,12 @@
   "description": "Official Home Assistant Lovelace card for the iopool integration",
   "license": "MIT",
   "author": "Marc Guyard",
-  "keywords": ["home-assistant", "lovelace", "iopool", "pool"],
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "iopool",
+    "pool"
+  ],
   "homepage": "https://github.com/mguyard/hass-iopool-card",
   "repository": {
     "type": "git",
@@ -22,11 +27,12 @@
     "dev": "rollup -c rollup.config.mjs --watch"
   },
   "dependencies": {
+    "apexcharts": "^5.13.0",
     "lit": "^3.3.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.0",
-    "@rollup/plugin-json": "latest",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.0.0",
     "@rollup/plugin-replace": "^5.0.0",
     "@rollup/plugin-terser": "^0.4.4",

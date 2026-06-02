@@ -447,3 +447,70 @@ describe('iopool-pump-panel — combined rendering', () => {
     expect(element.shadowRoot?.querySelector('.pump-panel__boost')).toBeTruthy();
   });
 });
+
+// ── Custom event dispatching ───────────────────────────────────────────────────
+
+describe('iopool-pump-panel — custom event dispatching', () => {
+  it('dispatches pump-icon-tap when the pump icon is clicked', async () => {
+    const element = createElement({
+      hass: createHass(),
+      pumpEntityId: 'switch.pool_pump',
+      pumpState: 'off',
+    });
+    await element.updateComplete;
+
+    let received = false;
+    element.addEventListener('pump-icon-tap', () => {
+      received = true;
+    });
+
+    element.shadowRoot
+      ?.querySelector('.pump-panel__icon')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    expect(received).toBe(true);
+  });
+
+  it('does not propagate the original click when pump icon is clicked (stopPropagation)', async () => {
+    const element = createElement({
+      hass: createHass(),
+      pumpEntityId: 'switch.pool_pump',
+      pumpState: 'off',
+    });
+    await element.updateComplete;
+
+    let bubbledClick = false;
+    document.body.addEventListener('click', () => {
+      bubbledClick = true;
+    });
+
+    element.shadowRoot
+      ?.querySelector('.pump-panel__icon')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    // The pump-icon-tap CustomEvent bubbles, but the original click must be stopped.
+    // Because composed: true lets it cross shadow boundaries, we verify the handler
+    // stops propagation by checking that the document-body click listener was NOT called
+    // via the shadow DOM click (MouseEvent is stopped inside the shadow root).
+    expect(bubbledClick).toBe(false);
+  });
+
+  it('dispatches filtration-tap when the filtration section is clicked', async () => {
+    const element = createElement({
+      filtrationDurationMinutes: 180,
+      recommendedMinutes: 360,
+    });
+    await element.updateComplete;
+
+    let received = false;
+    element.addEventListener('filtration-tap', () => {
+      received = true;
+    });
+
+    element.shadowRoot
+      ?.querySelector('.pump-panel__filtration')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+    expect(received).toBe(true);
+  });
+});
