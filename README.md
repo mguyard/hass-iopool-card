@@ -77,9 +77,11 @@ Full documentation for the integration can be found:
 
 Want to contribute to [iopool card](https://docs.page/mguyard/hass-iopool-card~dev/support/contributing)?
 
-If you feel this integration was valuable and want to support it in other ways, you can [sponsor me](https://github.com/sponsors/mguyard).
-
-
 ## License
 
 [GNU GENERAL PUBLIC LICENSE v3](LICENSE)
+
+---
+
+If you feel this integration was valuable and want to support it in other ways, you can [sponsor me](https://github.com/sponsors/mguyard).
+
