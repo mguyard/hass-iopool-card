@@ -1,6 +1,6 @@
 {
   "name": "hass-iopool-card",
-  "version": "0.0.0",
+  "version": "1.0.0-beta.1",
   "description": "Official Home Assistant Lovelace card for the iopool integration",
   "license": "MIT",
   "author": "Marc Guyard",
