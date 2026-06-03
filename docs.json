@@ -20,9 +20,9 @@
       "href": "/"
     },
     {
-      "id": "setup",
-      "title": "Setup",
-      "href": "/setup"
+      "id": "installation",
+      "title": "Installation",
+      "href": "/installation"
     },
     {
       "id": "components",
