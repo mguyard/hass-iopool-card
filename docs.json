@@ -42,7 +42,7 @@
       "pages": [
         {
           "title": "Installation",
-          "href": "/configuration/installation",
+          "href": "/configuration",
           "icon": "rocket"
         }
       ]
@@ -53,7 +53,7 @@
       "pages": [
         {
           "title": "Overview",
-          "href": "/configuration",
+          "href": "/configuration/overview",
           "icon": "gears"
         },
         {

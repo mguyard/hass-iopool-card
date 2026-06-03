@@ -1,55 +1,43 @@
 ---
-title: Configuration overview
-description: Full YAML configuration reference for the iopool Card.
-previous: /configuration/installation
-previousTitle: Installation
-next: /configuration/device
-nextTitle: Device
+title: Installation
+description: Install the card through the hass-iopool integration and add it to a dashboard.
+previous: /
+previousTitle: Home
+next: /configuration/overview
+nextTitle: Configuration Overview
 ---
+
+<Info>
+  There is no separate HACS repository for the card. Install the hass-iopool integration through
+  HACS, and the card is exposed automatically.
+</Info>
+
+## Install hass-iopool
+
+1. Open HACS in Home Assistant.
+2. [Install the hass-iopool integration.](https://docs.page/mguyard/hass-iopool/integration)
+3. Restart Home Assistant if prompted.
+
+## Add the card
+
+1. Open a dashboard in edit mode.
+2. Add a new card.
+3. Search for iopool Card.
+4. Select the card and choose your pool device.
+
+### Minimal YAML
 
 ```yaml
 type: custom:iopool-card
-device_id: 0a1b2c... # Required
-pump_entity: switch.pool_pump # Optional
-show_chart: true # Optional, default true
-chart_period: 96 # Optional: 24|48|96|168
-temperature_thresholds: [15, 20, 29, 32] # Optional
-debug: false # Optional, YAML-only
-section_actions: # Optional
-  temperature:
-    tap_action:
-      action: more-info
+device_id: YOUR_DEVICE_ID
 ```
 
-<Property name="device_id" type="string" required>
-  The iopool device ID. The visual editor picks it from the iopool device registry.
-</Property>
+<Image
+  src="https://placehold.co/600x400"
+  alt="Device picker in the visual editor"
+/>
 
-<Property name="pump_entity" type="string">
-  Optional pump switch entity such as `switch.pool_pump`.
-</Property>
-
-<Property name="show_chart" type="boolean">
-  Shows or hides the temperature chart. Defaults to `true`.
-</Property>
-
-<Property name="chart_period" type="24 | 48 | 96 | 168">
-  Chart window in hours. The editor exposes 24h, 48h, 96h, and 7d.
-</Property>
-
-<Property name="temperature_thresholds" type="[number, number, number, number]">
-  Custom temperature transitions for the gauge zones. Only temperature is configurable; pH and ORP
-  use fixed thresholds.
-</Property>
-
-<Property name="debug" type="boolean">
-  YAML-only debug mode. When enabled, the card prints diagnostics to the browser console.
-</Property>
-
-<Property name="section_actions" type="object">
-  Per-section action overrides for the built-in sections.
-</Property>
-
-<Info>
-  Set `debug: true` in YAML when you want browser console diagnostics during troubleshooting.
-</Info>
+<Warning>
+  If the card does not appear immediately, refresh the browser or clear the cache once after the
+  integration has been installed.
+</Warning>
