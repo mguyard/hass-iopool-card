@@ -1,14 +1,11 @@
 ---
 title: Configuration overview
 description: Full YAML configuration reference for the iopool Card.
-image: https://brands.home-assistant.io/iopool/icon.png
 previous: /installation
 previousTitle: Installation
 next: /configuration/device
 nextTitle: Device
 ---
-
-# Configuration overview
 
 ```yaml
 type: custom:iopool-card
@@ -23,8 +20,6 @@ section_actions: # Optional
     tap_action:
       action: more-info
 ```
-
-Set `debug: true` in YAML when you want browser console diagnostics during troubleshooting.
 
 <Property name="device_id" type="string" required>
   The iopool device ID. The visual editor picks it from the iopool device registry.
@@ -54,3 +49,7 @@ Set `debug: true` in YAML when you want browser console diagnostics during troub
 <Property name="section_actions" type="object">
   Per-section action overrides for the built-in sections.
 </Property>
+
+<Info>
+  Set `debug: true` in YAML when you want browser console diagnostics during troubleshooting.
+</Info>

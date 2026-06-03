@@ -20,30 +20,25 @@
       "href": "/"
     },
     {
-      "id": "integration",
-      "title": "Integration",
-      "href": "/integration"
+      "id": "setup",
+      "title": "Setup",
+      "href": "/setup"
     },
     {
       "id": "components",
       "title": "Components",
-      "href": "/components/header"
+      "href": "/components"
     },
     {
-      "id": "faq",
-      "title": "FAQ",
-      "href": "/faq"
-    },
-    {
-      "id": "issues",
-      "title": "Issues",
-      "href": "/issues"
+      "id": "support",
+      "title": "Support",
+      "href": "/support"
     }
   ],
   "sidebar": [
     { 
       "group": "Getting Started",
-      "tab": "integration",
+      "tab": "setup",
       "pages": [
         {
           "title": "Installation",
@@ -54,37 +49,37 @@
     },
     { 
       "group": "Configuration",
-      "tab": "integration",
+      "tab": "setup",
       "pages": [
         {
           "title": "Overview",
           "href": "/configuration",
-          "icon": "settings"
+          "icon": "gears"
         },
         {
           "title": "Device",
           "href": "/configuration/device",
-          "icon": "settings"
+          "icon": "gears"
         },
         {
           "title": "Pump",
           "href": "/configuration/pump",
-          "icon": "settings"
+          "icon": "gears"
         },
         {
           "title": "Thresholds",
           "href": "/configuration/thresholds",
-          "icon": "settings"
+          "icon": "gears"
         },
         {
           "title": "Chart",
           "href": "/configuration/chart",
-          "icon": "settings"
+          "icon": "gears"
         },
         {
           "title": "Actions",
           "href": "/configuration/actions",
-          "icon": "settings"
+          "icon": "gears"
         }
       ]
     },
@@ -95,58 +90,58 @@
         {
           "title": "Header",
           "href": "/components/header",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Warning Banner",
           "href": "/components/warning-banner",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Liquid Gauge",
           "href": "/components/liquid-gauge",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Mode Selector",
           "href": "/components/mode-selector",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Pump Control",
           "href": "/components/pump-control",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Filtration Progress",
           "href": "/components/filtration-progress",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Boost Selector",
           "href": "/components/boost-selector",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         },
         {
           "title": "Temperature Chart",
           "href": "/components/temperature-chart",
-          "icon": "view-dashboard"
+          "icon": "picture-in-picture"
         }
       ]
     },
     { 
       "group": "Support",
-      "tab": "faq",
+      "tab": "support",
       "pages": [
         {
           "title": "FAQ",
-          "href": "/faq",
-          "icon": "help-circle"
+          "href": "/support",
+          "icon": "circle-question"
         },
         {
           "title": "Contributing",
-          "href": "/faq/contributing",
-          "icon": "bug"
+          "href": "/support/contributing",
+          "icon": "heart"
         }
       ]
     }
