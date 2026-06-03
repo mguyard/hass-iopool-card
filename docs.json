@@ -89,7 +89,7 @@
       "pages": [
         {
           "title": "Header",
-          "href": "/components/header",
+          "href": "/components",
           "icon": "picture-in-picture"
         },
         {
