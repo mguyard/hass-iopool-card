@@ -1,10 +1,11 @@
----
+----
 title: Installation
 description: Install the card through the hass-iopool integration and add it to a dashboard.
-previous: /introduction
-previousTitle: Introduction
-next: /first-card
-nextTitle: First card
+image: https://brands.home-assistant.io/iopool/icon.png
+previous: /
+previousTitle: Home
+next: /configuration
+nextTitle: Configuration
 ---
 
 # Installation
@@ -17,7 +18,7 @@ nextTitle: First card
 ## Install hass-iopool
 
 1. Open HACS in Home Assistant.
-2. Install the hass-iopool integration.
+2. [Install the hass-iopool integration.](https://docs.page/mguyard/hass-iopool/integration)
 3. Restart Home Assistant if prompted.
 
 ## Add the card
@@ -26,6 +27,18 @@ nextTitle: First card
 2. Add a new card.
 3. Search for iopool Card.
 4. Select the card and choose your pool device.
+
+### Minimal YAML
+
+```yaml
+type: custom:iopool-card
+device_id: YOUR_DEVICE_ID // [!code highlight]
+```
+
+<Image
+  src="https://placehold.co/600x400"
+  alt="Device picker in the visual editor"
+/>
 
 <Warning>
   If the card does not appear immediately, refresh the browser or clear the cache once after the

@@ -1,6 +1,7 @@
 ---
 title: Warning banner
-description: The maintenance and initialization banner shown when the card is grayed out.
+description: The maintenance and initialization/opening banner shown when the card is grayed out.
+image: https://brands.home-assistant.io/iopool/icon.png
 previous: /components/header
 previousTitle: Header
 next: /components/liquid-gauge
@@ -9,8 +10,16 @@ nextTitle: Liquid gauge
 
 # Warning banner
 
-The warning banner appears in maintenance and initialization modes.
+The warning banner appears in initialization, opening sensor modes and when temperature, pH or ORP have a measure_mode `maintenance`
 
 - Maintenance warns that data may be outdated.
-- Initialization warns that data may be incomplete.
+- Initialization/Opening warns that data may be incomplete.
 - The rest of the card is still shown, but it is visually grayed out.
+
+# Screenshots
+
+<Image src="https://placehold.co/600x400" alt="Warning Banner Initialization" />
+
+<Image src="https://placehold.co/600x400" alt="Warning Banner Opening" />
+
+<Image src="https://placehold.co/600x400" alt="Warning Banner Maintenance" />

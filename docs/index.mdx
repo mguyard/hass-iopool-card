@@ -1,13 +1,33 @@
 ---
 title: iopool Card
-description: Home page for the iopool Card documentation site.
-next: /introduction
-nextTitle: Introduction
+image: https://brands.home-assistant.io/iopool/icon.png
+next: /installation
+nextTitle: Installation
 ---
+
+<Badges>
+    <Image src="https://img.shields.io/github/license/mguyard/hass-iopool-card?style=default&color=0080ff" alt="License" />
+    <Image src="https://img.shields.io/github/last-commit/mguyard/hass-iopool-card?style=default&color=0080ff" alt="Last Commit" />
+    <Image src="https://img.shields.io/github/languages/top/mguyard/hass-iopool-card?style=default&color=0080ff" alt="repo-top-language" />
+    <Image src="https://img.shields.io/github/languages/count/mguyard/hass-iopool-card?style=default&color=0080ff" alt="repo-language-count" />
+    <Image src="https://codecov.io/github/mguyard/hass-iopool-card/graph/badge.svg?token=N2Y1LAEBGG" alt="codecov" />
+</Badges>
+<Badges>
+    <Image src="https://img.shields.io/github/v/release/mguyard/hass-iopool-card?label=Stable" alt="Last Stable Release" />
+    <Image src="https://img.shields.io/github/release-date/mguyard/hass-iopool-card?label=Stable" alt="Last Release Date Stable" />
+    <Image src="https://img.shields.io/github/v/release/mguyard/hass-iopool-card?label=Beta&include_prereleases" alt="Last Beta Release" />
+    <Image src="https://img.shields.io/github/release-date-pre/mguyard/hass-iopool-card?label=Beta" alt="Last Release Date Beta" />
+    <Image src="https://img.shields.io/github/issues-search/mguyard/hass-iopool-card?query=label%3Abug%20is%3Aopened&label=Open%20Bugs" alt="Open Bugs" />
+    <Image src="https://img.shields.io/github/issues-pr/mguyard/hass-iopool-card" alt="Open PRs" />
+</Badges>
+<Badges>
+    <Image src="https://github.com/mguyard/hass-iopool-card/actions/workflows/build.yaml/badge.svg" alt="Home Assistant Actions" />
+    <Image src="https://github.com/mguyard/hass-iopool-card/actions/workflows/release.yaml/badge.svg" alt="Release Actions" />
+</Badges>
 
 # iopool Card
 
-The iopool Card is the main Lovelace card for the hass-iopool integration. It brings together the most useful pool information from your iopool EcO sensor in a single dashboard view.
+The iopool Card is the main Lovelace card for the [hass-iopool](https://github.com/mguyard/hass-iopool) integration. It brings together the most useful pool information from your iopool EcO sensor in a single dashboard view.
 
 It can show temperature, pH, and ORP gauges, pump controls, filtration mode selection, boost controls, daily filtration progress, and a temperature history chart.
 
@@ -15,10 +35,22 @@ It can show temperature, pH, and ORP gauges, pump controls, filtration mode sele
   No separate installation is needed. The card is bundled with the hass-iopool integration and becomes available automatically once the integration is installed.
 </Info>
 
-<Card title="Getting Started / Installation" icon="download" href="/installation">
-  Follow the installation guide to add the bundled card to Home Assistant and start using it in Lovelace.
+<Card title="What you get" icon="pool">
+
+- Live gauges for temperature, pH, and ORP
+- Pump control when a pump switch is configured
+- Filtration mode selector and boost selector
+- Daily filtration status and recommendation
+- Temperature history chart with period selector
+
 </Card>
 
 ## Screenshot
 
-<Image src="/assets/screenshots/placeholder-card-standard-light.png" alt="iopool Card" />
+<Image src="https://placehold.co/600x400" alt="iopool Card" />
+
+<!--  Custom component to show Github Badges on a oneline : https://use.docs.page/components/custom  -->
+
+export const Badges = props => {
+  return <div class="justify-center items-center flex flex-wrap gap-2">{props.children}</div>;
+};

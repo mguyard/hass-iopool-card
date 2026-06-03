@@ -18,46 +18,137 @@
       "id": "root",
       "title": "Home",
       "href": "/"
+    },
+    {
+      "id": "integration",
+      "title": "Integration",
+      "href": "/integration"
+    },
+    {
+      "id": "components",
+      "title": "Components",
+      "href": "/components/header"
+    },
+    {
+      "id": "faq",
+      "title": "FAQ",
+      "href": "/faq"
+    },
+    {
+      "id": "issues",
+      "title": "Issues",
+      "href": "/issues"
     }
   ],
   "sidebar": [
-    { "group": "Getting Started", "pages": ["introduction", "installation", "first-card"] },
-    {
+    { 
+      "group": "Getting Started",
+      "tab": "integration",
+      "pages": [
+        {
+          "title": "Installation",
+          "href": "/installation",
+          "icon": "rocket"
+        }
+      ]
+    },
+    { 
       "group": "Configuration",
+      "tab": "integration",
       "pages": [
-        "configuration/overview",
-        "configuration/device",
-        "configuration/pump",
-        "configuration/thresholds",
-        "configuration/chart",
-        "configuration/actions"
+        {
+          "title": "Overview",
+          "href": "/configuration",
+          "icon": "settings"
+        },
+        {
+          "title": "Device",
+          "href": "/configuration/device",
+          "icon": "settings"
+        },
+        {
+          "title": "Pump",
+          "href": "/configuration/pump",
+          "icon": "settings"
+        },
+        {
+          "title": "Thresholds",
+          "href": "/configuration/thresholds",
+          "icon": "settings"
+        },
+        {
+          "title": "Chart",
+          "href": "/configuration/chart",
+          "icon": "settings"
+        },
+        {
+          "title": "Actions",
+          "href": "/configuration/actions",
+          "icon": "settings"
+        }
       ]
     },
-    {
+    { 
       "group": "Components",
+      "tab": "components",
       "pages": [
-        "components/header",
-        "components/warning-banner",
-        "components/liquid-gauge",
-        "components/mode-selector",
-        "components/pump-control",
-        "components/filtration-progress",
-        "components/boost-selector",
-        "components/temperature-chart"
+        {
+          "title": "Header",
+          "href": "/components/header",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Warning Banner",
+          "href": "/components/warning-banner",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Liquid Gauge",
+          "href": "/components/liquid-gauge",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Mode Selector",
+          "href": "/components/mode-selector",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Pump Control",
+          "href": "/components/pump-control",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Filtration Progress",
+          "href": "/components/filtration-progress",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Boost Selector",
+          "href": "/components/boost-selector",
+          "icon": "view-dashboard"
+        },
+        {
+          "title": "Temperature Chart",
+          "href": "/components/temperature-chart",
+          "icon": "view-dashboard"
+        }
       ]
     },
-    {
-      "group": "Pool Modes",
+    { 
+      "group": "Support",
+      "tab": "faq",
       "pages": [
-        "modes/standard",
-        "modes/active-winter",
-        "modes/passive-winter",
-        "modes/maintenance"
+        {
+          "title": "FAQ",
+          "href": "/faq",
+          "icon": "help-circle"
+        },
+        {
+          "title": "Contributing",
+          "href": "/faq/contributing",
+          "icon": "bug"
+        }
       ]
-    },
-    {
-      "group": "Troubleshooting",
-      "pages": ["troubleshooting/debug-mode", "troubleshooting/common-issues"]
     }
   ],
   "social": {

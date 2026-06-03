@@ -1,6 +1,7 @@
 ---
 title: Actions
 description: Override the tap, hold, and double tap actions for each section.
+image: https://brands.home-assistant.io/iopool/icon.png
 previous: /configuration/chart
 previousTitle: Chart
 next: /components/header
@@ -11,7 +12,7 @@ nextTitle: Header
 
 Use `section_actions` to customize interactions per section. The card does not expose a global card action because it represents a single pool.
 
-Supported actions are `more-info`, `navigate`, `url`, `call-service`, `toggle`, and `none`.
+Supported actions are `more-info` (default), `navigate`, `url`, `call-service`, `toggle`, and `none`.
 
 ```yaml
 section_actions:
@@ -22,5 +23,3 @@ section_actions:
     tap_action:
       action: more-info // [!code highlight]
 ```
-
-Default behavior is kept simple: gauges and mode open more-info by default, the pump toggles by default, and the other sections do nothing on hold or double tap unless you override them.
