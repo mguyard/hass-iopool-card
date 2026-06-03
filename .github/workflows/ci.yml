@@ -155,6 +155,7 @@ jobs:
           repository: mguyard/hass-iopool
           token: ${{ secrets.PAT_HASS_IOPOOL }}
           path: hass-iopool
+          ref: dev
 
       - name: Copy card to hass-iopool
         if: steps.release.outputs.new_release_published == 'true'
