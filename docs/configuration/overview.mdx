@@ -25,26 +25,38 @@ section_actions: # Optional
   The iopool device ID. The visual editor picks it from the iopool device registry.
 </Property>
 
+
+
 <Property name="pump_entity" type="string">
   Optional pump switch entity such as `switch.pool_pump`.
 </Property>
+
+
 
 <Property name="show_chart" type="boolean">
   Shows or hides the temperature chart. Defaults to `true`.
 </Property>
 
+
+
 <Property name="chart_period" type="24 | 48 | 96 | 168">
   Chart window in hours. The editor exposes 24h, 48h, 96h, and 7d.
 </Property>
+
+
 
 <Property name="temperature_thresholds" type="[number, number, number, number]">
   Custom temperature transitions for the gauge zones. Only temperature is configurable; pH and ORP
   use fixed thresholds.
 </Property>
 
+
+
 <Property name="debug" type="boolean">
   YAML-only debug mode. When enabled, the card prints diagnostics to the browser console.
 </Property>
+
+
 
 <Property name="section_actions" type="object">
   Per-section action overrides for the built-in sections.
