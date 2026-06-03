@@ -839,4 +839,3 @@ describe('IopoolCardEditor chart_period chip default', () => {
     expect(chips[3]?.classList.contains('chip-btn--active')).toBe(false);
   });
 });
-
