@@ -1,10 +1,35 @@
+<p align="center">
+  <img src="https://brands.home-assistant.io/_/iopool/icon@2x.png" width="300" />
+</p>
+<p align="center">
+    Documentation for the iopool card to Home Assistant.
+</p>
+<p align="center">
+	<img src="https://img.shields.io/github/license/mguyard/hass-iopool-card?style=default&color=0080ff" alt="license">
+	<img src="https://img.shields.io/github/last-commit/mguyard/hass-iopool-card?style=default&color=0080ff" alt="Last Commit">
+	<img src="https://img.shields.io/github/languages/top/mguyard/hass-iopool-card?style=default&color=0080ff" alt="repo-top-language">
+	<img src="https://img.shields.io/github/languages/count/mguyard/hass-iopool-card?style=default&color=0080ff" alt="repo-language-count">
+    <a href="https://codecov.io/gh/mguyard/hass-iopool-card" >
+        <img src="https://codecov.io/gh/mguyard/hass-iopool-card/graph/badge.svg?token=N2Y1LAEBGG" alt="CodeCov"/>
+    </a>
+<p>
+<p align="center">
+    <img src="https://img.shields.io/github/v/release/mguyard/hass-iopool-card?label=Stable" alt="Last Stable Release">
+    <img src="https://img.shields.io/github/release-date/mguyard/hass-iopool-card?label=Stable" alt="Last Release Date Stable">
+    <img src="https://img.shields.io/github/v/release/mguyard/hass-iopool-card?label=Beta&include_prereleases" alt="Last Beta Release">
+    <img src="https://img.shields.io/github/release-date-pre/mguyard/hass-iopool-card?label=Beta" alt="Last Release Date Beta">
+    <img src="https://img.shields.io/github/issues-search/mguyard/hass-iopool-card?query=label%3Abug%20is%3Aopened&label=Open%20Bugs" alt="Open Bugs">
+    <img src="https://img.shields.io/github/issues-pr/mguyard/hass-iopool-card" alt="Open PRs">
+<p>
+<p align="center">
+    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/build.yaml/badge.svg" alt="Build Actions">
+    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/release.yaml/badge.svg" alt="Release Actions">
+</p>
+<br /><br />
+
 # hass-iopool-card
 
-[![Version](https://img.shields.io/github/v/release/mguyard/hass-iopool-card?style=flat-square)](https://github.com/mguyard/hass-iopool-card/releases)
-[![License](https://img.shields.io/github/license/mguyard/hass-iopool-card?style=flat-square)](LICENSE)
-[![HACS](https://img.shields.io/badge/HACS-custom%20integration-41BDF5?style=flat-square)](https://hacs.xyz/)
-
-Official Lovelace card for the hass-iopool Home Assistant integration.
+Official Lovelace card for the [hass-iopool Home Assistant integration](https://docs.page/mguyard/hass-iopool).
 
 It presents the main pool data and controls in a single card: temperature, pH, ORP, filtration mode, pump control, daily filtration progress, boost, and a temperature history chart.
 
@@ -21,7 +46,7 @@ It presents the main pool data and controls in a single card: temperature, pH, O
 
 ## Installation
 
-The card is bundled with the hass-iopool integration. Install hass-iopool through HACS, then add the card from the Lovelace card picker by searching for iopool.
+The card is bundled with the hass-iopool integration. Install [hass-iopool](https://docs.page/mguyard/hass-iopool/integration) through HACS, then add the card from the Lovelace card picker by searching for iopool.
 
 ## Usage
 
@@ -37,26 +62,24 @@ device_id: YOUR_DEVICE_ID
 | `device_id`              | string             | required    | Home Assistant device ID for the iopool pool            |
 | `pump_entity`            | string             | none        | Optional pump switch entity, such as `switch.pool_pump` |
 | `show_chart`             | boolean            | `true`      | Show or hide the temperature chart                      |
-| `chart_period`           | 24, 48, 96, 168    | `96`        | Chart window in hours                                   |
+| `chart_period`           | 24, 48, 96, 168    | `48`        | Chart window in hours                                   |
 | `temperature_thresholds` | tuple of 4 numbers | pool preset | Temperature zone transition values                      |
 | `debug`                  | boolean            | `false`     | YAML-only console debug mode                            |
-| `section_actions`        | object             | none        | Per-section tap, hold, and double tap actions           |
+| `section_actions`        | object             | more-info        | Per-section tap actions           |
 
-## Development
+## Docs
 
-```bash
-npm ci
-npm run dev
-npm test
-npm run build
-```
+Full documentation for the integration can be found:
+- for `Stable` version [here](https://docs.page/mguyard/hass-iopool-card)
+- for `Beta` version [here](https://docs.page/mguyard/hass-iopool-card~beta)
+
+## Contribution
+
+Want to contribute to [iopool card](https://docs.page/mguyard/hass-iopool-card~dev/support/contributing)?
+
+If you feel this integration was valuable and want to support it in other ways, you can [sponsor me](https://github.com/sponsors/mguyard).
+
 
 ## License
 
-MIT
-
-## Links
-
-- [hass-iopool](https://github.com/mguyard/hass-iopool)
-- [Documentation site](https://docs.page/mguyard/hass-iopool-card)
-- [Issues](https://github.com/mguyard/hass-iopool-card/issues)# hass-iopool-card
+[GNU GENERAL PUBLIC LICENSE v3](LICENSE)
