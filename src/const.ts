@@ -1,6 +1,6 @@
 import type { EntityMapEntry, EntityMapKey, TemperatureThresholds } from './types';
 
-// IMPORTANT: __CARD_VERSION__ is replaced at build time by Rollup @rollup/plugin-replace
+// IMPORTANT: CARD_VERSION is replaced at build time by Rollup @rollup/plugin-replace
 export const CARD_VERSION: string = '__CARD_VERSION__';
 export const CARD_TYPE = 'iopool-card';
 export const CARD_NAME = 'iopool Card';
