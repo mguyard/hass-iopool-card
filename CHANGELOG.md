@@ -1,3 +1,10 @@
+# [1.0.0-beta.3](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-06-03)
+
+
+### Bug Fixes
+
+* **ci:** 🔧 Update CI workflow to include `ref` for card copy step ([b498507](https://github.com/mguyard/hass-iopool-card/commit/b4985075b19e9e1d4a4f26f37391aa0cab6e9b48))
+
 # [1.0.0-beta.2](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-06-03)
 
 
