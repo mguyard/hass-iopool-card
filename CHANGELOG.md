@@ -1,3 +1,10 @@
+# [1.0.0-beta.2](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2026-06-03)
+
+
+### Bug Fixes
+
+* **release:** trigger release ([8b09dc3](https://github.com/mguyard/hass-iopool-card/commit/8b09dc35817581233cb962d4d593bf2ed407ef4e))
+
 # 1.0.0-beta.1 (2026-06-03)
 
 
