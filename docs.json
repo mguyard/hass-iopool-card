@@ -42,7 +42,7 @@
       "pages": [
         {
           "title": "Installation",
-          "href": "/installation",
+          "href": "/configuration/installation",
           "icon": "rocket"
         }
       ]
