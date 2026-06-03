@@ -5,6 +5,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import replace from '@rollup/plugin-replace';
 import json from '@rollup/plugin-json';
+import apexSvgIsolate from './rollup-plugin-apex-svg-isolate.mjs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
@@ -31,14 +32,19 @@ export default {
     json(),
     commonjs(),
     typescript({ tsconfig: './tsconfig.json' }),
-    !isDev && terser({
-      format: {
-        comments: false,
-      },
-      compress: {
-        drop_console: false,
-        passes: 2,
-      },
-    }),
+    // Prevents ApexCharts from writing its bundled SVG.js to window.SVG / global.SVG,
+    // which conflicts with vehicle-info-card's ApexCharts v3 (SVG.js v2).
+    // See rollup-plugin-apex-svg-isolate.mjs for the full root-cause explanation.
+    apexSvgIsolate(),
+    !isDev &&
+      terser({
+        format: {
+          comments: false,
+        },
+        compress: {
+          drop_console: false,
+          passes: 2,
+        },
+      }),
   ].filter(Boolean),
 };
