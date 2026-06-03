@@ -60,12 +60,6 @@
           }
         ]
       }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "publishCmd": "git clone https://x-access-token:$PAT_HASS_IOPOOL@github.com/mguyard/hass-iopool.git /tmp/hass-iopool && cd /tmp/hass-iopool && git config user.email 'hass-iopool-card@mguyard.com' && git config user.name 'hass-iopool-card' && git checkout -b card-update-v${nextRelease.version} && cp $GITHUB_WORKSPACE/dist/iopool-card.js custom_components/iopool/frontend/iopool-card.js && git add custom_components/iopool/frontend/iopool-card.js && git commit -m 'chore: update iopool-card to v${nextRelease.version}' && git push origin card-update-v${nextRelease.version} && awk '/^## \\[${nextRelease.version}\\]/{f=1} f && /^## \\[/ && !/^## \\[${nextRelease.version}\\]/{f=0} f{print}' $GITHUB_WORKSPACE/CHANGELOG.md > /tmp/pr-notes.md && { echo \"Automated PR from [hass-iopool-card v${nextRelease.version}](https://github.com/mguyard/hass-iopool-card/releases/tag/v${nextRelease.version})\"; echo \"\"; cat /tmp/pr-notes.md; } > /tmp/pr-body.md && GH_TOKEN=$PAT_HASS_IOPOOL gh pr create --repo mguyard/hass-iopool --title 'chore: update iopool-card to v${nextRelease.version}' --body-file /tmp/pr-body.md --label card-update --base dev"
-      }
     ]
   ]
 }

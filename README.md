@@ -22,8 +22,7 @@
     <img src="https://img.shields.io/github/issues-pr/mguyard/hass-iopool-card" alt="Open PRs">
 <p>
 <p align="center">
-    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/build.yaml/badge.svg" alt="Build Actions">
-    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/release.yaml/badge.svg" alt="Release Actions">
+    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/ci.yaml/badge.svg" alt="CI/CD Actions">
 </p>
 <br /><br />
 

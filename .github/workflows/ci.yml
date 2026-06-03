@@ -1,0 +1,188 @@
+---
+name: CI / Release
+
+# WORKFLOW LOGIC EXPLANATION:
+# Sequential pipeline: test → build → release
+#
+# Execution rules by trigger:
+# - PR on dev/beta/main: test → build (release skipped)
+# - PUSH on main/beta:   test → build → release
+#
+# If tests fail, build is skipped. If build fails, release is skipped.
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - beta
+      - main
+  push:
+    branches:
+      - main
+      - beta
+
+# Cancel in-progress runs on PRs; never cancel release runs (push to main/beta).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: |
+          npx vitest run \
+            --coverage \
+            --reporter=verbose \
+            --reporter=junit \
+            --outputFile.junit=junit.xml
+
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-iopool-card-ci
+          fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./junit.xml
+          flags: unittests
+          report_type: test_results
+          fail_ci_if_error: false
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-ci
+          path: |
+            coverage/
+            junit.xml
+          retention-days: 7
+
+  build:
+    name: Build
+    needs: [test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iopool-card
+          path: dist/iopool-card.js
+          retention-days: 7
+
+  release:
+    name: Release
+    needs: [build]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: iopool-card
+          path: dist/
+
+      - name: Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Checkout hass-iopool
+        if: steps.release.outputs.new_release_published == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: mguyard/hass-iopool
+          token: ${{ secrets.PAT_HASS_IOPOOL }}
+          path: hass-iopool
+
+      - name: Copy card to hass-iopool
+        if: steps.release.outputs.new_release_published == 'true'
+        run: |
+          cp dist/iopool-card.js hass-iopool/custom_components/iopool/frontend/iopool-card.js
+
+      - name: Write card version file
+        if: steps.release.outputs.new_release_published == 'true'
+        run: |
+          echo "${{ steps.release.outputs.new_release_version }}" > hass-iopool/custom_components/iopool/frontend/iopool-card.version
+
+      - name: Create Pull Request
+        if: steps.release.outputs.new_release_published == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.PAT_HASS_IOPOOL }}
+          path: hass-iopool
+          branch: card-update-v${{ steps.release.outputs.new_release_version }}
+          base: dev
+          title: "chore: update iopool-card to v${{ steps.release.outputs.new_release_version }}"
+          commit-message: "chore: update iopool-card to v${{ steps.release.outputs.new_release_version }}"
+          labels: card-update
+          assignees: mguyard
+          body: |
+            Automated PR from [hass-iopool-card v${{ steps.release.outputs.new_release_version }}](https://github.com/mguyard/hass-iopool-card/releases/tag/v${{ steps.release.outputs.new_release_version }})
