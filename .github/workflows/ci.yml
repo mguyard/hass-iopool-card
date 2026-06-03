@@ -180,8 +180,8 @@ jobs:
           path: hass-iopool
           branch: card-update-v${{ steps.release.outputs.new_release_version }}
           base: dev
-          title: "chore: update iopool-card to v${{ steps.release.outputs.new_release_version }}"
-          commit-message: "chore: update iopool-card to v${{ steps.release.outputs.new_release_version }}"
+          title: "chore(iopool-card): update iopool-card to v${{ steps.release.outputs.new_release_version }}"
+          commit-message: "fix(iopool-card): update iopool-card to v${{ steps.release.outputs.new_release_version }}"
           labels: card-update
           assignees: mguyard
           body: |
