@@ -1,3 +1,10 @@
+# [1.0.0-beta.4](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-06-03)
+
+
+### Bug Fixes
+
+* **build:** 🐛 Isolate ApexCharts SVG to prevent cross-bundle conflict ([32055cd](https://github.com/mguyard/hass-iopool-card/commit/32055cd72c3d90ab4331ef5472359118f0fdcaa3))
+
 # [1.0.0-beta.3](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2026-06-03)
 
 
