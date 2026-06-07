@@ -651,6 +651,11 @@ declare global {
       description: string;
       preview?: boolean;
       documentationURL?: string;
+      // HA 2026.6+ entity-first card picker support (PR #52228)
+      getEntitySuggestion?: (
+        hass: HomeAssistant,
+        entityId: string,
+      ) => { config: Record<string, unknown> } | null;
     }>;
   }
 }
@@ -662,6 +667,20 @@ window.customCards.push({
   description: 'Official iopool — full management of a connected pool',
   preview: true,
   documentationURL: 'https://github.com/mguyard/hass-iopool-card',
+  // HA 2026.6+ entity-first card picker: resolve device_id from the selected entity.
+  // This card is device-based, so we resolve device_id rather than passing entity_id.
+  getEntitySuggestion: (hass: HomeAssistant, entityId: string) => {
+    const entityEntry = hass.entities?.[entityId];
+    if (!entityEntry || entityEntry.platform !== 'iopool') return null;
+    const deviceId = entityEntry.device_id;
+    if (!deviceId) return null;
+    return {
+      config: {
+        type: 'custom:iopool-card',
+        device_id: deviceId,
+      },
+    };
+  },
 });
 
 console.info(
