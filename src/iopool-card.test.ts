@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import type {
   HomeAssistant,
   IopoolCardConfig,
@@ -280,6 +280,127 @@ describe('window.customCards', () => {
   it('marks preview as true', () => {
     const entry = window.customCards?.find((c) => c.type === 'iopool-card');
     expect(entry?.preview).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// window.customCards — getEntitySuggestion
+// ---------------------------------------------------------------------------
+
+describe('window.customCards — getEntitySuggestion', () => {
+  const entry = window.customCards?.find((c) => c.type === 'iopool-card');
+
+  it('registers a getEntitySuggestion function on the customCards entry', () => {
+    expect(typeof entry?.getEntitySuggestion).toBe('function');
+  });
+
+  it('returns null when entityId is not in hass.entities', () => {
+    const hass = buildMockHass({ entities: {} });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.unknown_entity');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when entity platform is not iopool', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.some_entity': {
+          entity_id: 'sensor.some_entity',
+          device_id: 'device-abc123',
+          platform: 'other_integration',
+          unique_id: 'some-unique-id',
+        },
+      },
+    });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.some_entity');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when iopool entity has device_id null', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.iopool_pool_temperature': {
+          entity_id: 'sensor.iopool_pool_temperature',
+          device_id: null,
+          platform: 'iopool',
+          unique_id: 'unique-temp',
+        },
+      },
+    });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    expect(result).toBeNull();
+  });
+
+  it('returns null when hass.entities is undefined', () => {
+    const hass = { ...buildMockHass(), entities: undefined } as unknown as HomeAssistant;
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    expect(result).toBeNull();
+  });
+
+  it('returns a config with type custom:iopool-card for a valid iopool entity', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.iopool_pool_temperature': {
+          entity_id: 'sensor.iopool_pool_temperature',
+          device_id: 'device-abc123',
+          platform: 'iopool',
+          unique_id: 'unique-temp',
+        },
+      },
+    });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    expect(result?.config?.type).toBe('custom:iopool-card');
+  });
+
+  it('returns the correct device_id in the suggestion config', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.iopool_pool_temperature': {
+          entity_id: 'sensor.iopool_pool_temperature',
+          device_id: 'device-abc123',
+          platform: 'iopool',
+          unique_id: 'unique-temp',
+        },
+      },
+    });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    expect(result?.config?.device_id).toBe('device-abc123');
+  });
+
+  it('does not include an entity key in the suggestion config', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.iopool_pool_temperature': {
+          entity_id: 'sensor.iopool_pool_temperature',
+          device_id: 'device-abc123',
+          platform: 'iopool',
+          unique_id: 'unique-temp',
+        },
+      },
+    });
+    const result = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    expect(result?.config).not.toHaveProperty('entity');
+  });
+
+  it('returns the same device_id for different iopool entities from the same device', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.iopool_pool_temperature': {
+          entity_id: 'sensor.iopool_pool_temperature',
+          device_id: 'device-abc123',
+          platform: 'iopool',
+          unique_id: 'unique-temp',
+        },
+        'sensor.iopool_pool_ph': {
+          entity_id: 'sensor.iopool_pool_ph',
+          device_id: 'device-abc123',
+          platform: 'iopool',
+          unique_id: 'unique-ph',
+        },
+      },
+    });
+    const result1 = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_temperature');
+    const result2 = entry?.getEntitySuggestion?.(hass, 'sensor.iopool_pool_ph');
+    expect(result1?.config?.device_id).toBe(result2?.config?.device_id);
   });
 });
 
