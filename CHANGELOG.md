@@ -1,3 +1,10 @@
+# [1.0.0-beta.5](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-06-07)
+
+
+### Features
+
+* **card:** ✨ Add getEntitySuggestion for HA 2026.6 entity picker ([3312abb](https://github.com/mguyard/hass-iopool-card/commit/3312abb45a067e5ff8273cc73496e127d2910080))
+
 # [1.0.0-beta.4](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2026-06-03)
 
 
