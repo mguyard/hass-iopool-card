@@ -22,7 +22,9 @@
     <img src="https://img.shields.io/github/issues-pr/mguyard/hass-iopool-card" alt="Open PRs">
 <p>
 <p align="center">
-    <img src="https://github.com/mguyard/hass-iopool/actions/workflows/ci.yaml/badge.svg" alt="CI/CD Actions">
+    <p align="center"><b>Stable: </b><img src="https://github.com/mguyard/hass-iopool-card/actions/workflows/ci.yml/badge.svg" alt="CI / Release Actions - Stable">
+    <b>Beta : </b><img src="https://github.com/mguyard/hass-iopool-card/actions/workflows/ci.yml/badge.svg?branch=beta" alt="CI / Release Actions - Beta">
+    <b>Dev : </b><img src="https://github.com/mguyard/hass-iopool-card/actions/workflows/ci.yml/badge.svg?branch=dev" alt="CI / Release Actions - Dev"><p>
 </p>
 <br /><br />
 
@@ -64,11 +66,12 @@ device_id: YOUR_DEVICE_ID
 | `chart_period`           | 24, 48, 96, 168    | `48`        | Chart window in hours                                   |
 | `temperature_thresholds` | tuple of 4 numbers | pool preset | Temperature zone transition values                      |
 | `debug`                  | boolean            | `false`     | YAML-only console debug mode                            |
-| `section_actions`        | object             | more-info        | Per-section tap actions           |
+| `section_actions`        | object             | more-info   | Per-section tap actions                                 |
 
 ## Docs
 
 Full documentation for the integration can be found:
+
 - for `Stable` version [here](https://docs.page/mguyard/hass-iopool-card)
 - for `Beta` version [here](https://docs.page/mguyard/hass-iopool-card~beta)
 
@@ -83,4 +86,3 @@ Want to contribute to [iopool card](https://docs.page/mguyard/hass-iopool-card~d
 ---
 
 If you feel this integration was valuable and want to support it in other ways, you can [sponsor me](https://github.com/sponsors/mguyard).
-
