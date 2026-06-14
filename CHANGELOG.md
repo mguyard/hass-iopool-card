@@ -1,3 +1,15 @@
+# [1.1.0-beta.1](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0...v1.1.0-beta.1) (2026-06-14)
+
+
+### Bug Fixes
+
+* **build:** 🐛 Isolate ApexCharts SVG to prevent cross-bundle conflict ([32055cd](https://github.com/mguyard/hass-iopool-card/commit/32055cd72c3d90ab4331ef5472359118f0fdcaa3))
+
+
+### Features
+
+* **card:** ✨ Add getEntitySuggestion for HA 2026.6 entity picker ([3312abb](https://github.com/mguyard/hass-iopool-card/commit/3312abb45a067e5ff8273cc73496e127d2910080))
+
 # [1.0.0-beta.5](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0-beta.4...v1.0.0-beta.5) (2026-06-07)
 
 
