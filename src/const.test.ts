@@ -30,32 +30,47 @@ describe('CARD metadata', () => {
   });
 });
 
+const TEMP_UNITS = ['°C', '°F', 'K'] as const;
+
 describe('DEFAULT_POOL_THRESHOLDS', () => {
-  it('has exactly 4 values', () => {
-    expect(DEFAULT_POOL_THRESHOLDS).toHaveLength(4);
+  it('has an entry for every supported temperature unit', () => {
+    for (const unit of TEMP_UNITS) {
+      expect(DEFAULT_POOL_THRESHOLDS).toHaveProperty(unit);
+    }
   });
 
-  it('is strictly increasing', () => {
-    expect(DEFAULT_POOL_THRESHOLDS[0]).toBeLessThan(DEFAULT_POOL_THRESHOLDS[1]);
-    expect(DEFAULT_POOL_THRESHOLDS[1]).toBeLessThan(DEFAULT_POOL_THRESHOLDS[2]);
-    expect(DEFAULT_POOL_THRESHOLDS[2]).toBeLessThan(DEFAULT_POOL_THRESHOLDS[3]);
+  it('is strictly increasing in every unit', () => {
+    for (const unit of TEMP_UNITS) {
+      const t = DEFAULT_POOL_THRESHOLDS[unit];
+      expect(t, unit).toHaveLength(4);
+      expect(t[0], unit).toBeLessThan(t[1]);
+      expect(t[1], unit).toBeLessThan(t[2]);
+      expect(t[2], unit).toBeLessThan(t[3]);
+    }
   });
 
-  it('matches documented pool values [15, 20.5, 29, 32]', () => {
-    expect(DEFAULT_POOL_THRESHOLDS).toEqual([15, 20.5, 29, 32]);
+  it('matches documented pool values [15, 20.5, 29, 32] in °C', () => {
+    expect(DEFAULT_POOL_THRESHOLDS['°C']).toEqual([15, 20.5, 29, 32]);
   });
 });
 
 describe('DEFAULT_SPA_THRESHOLDS', () => {
-  it('has exactly 4 values and is strictly increasing', () => {
-    expect(DEFAULT_SPA_THRESHOLDS).toHaveLength(4);
-    expect(DEFAULT_SPA_THRESHOLDS[0]).toBeLessThan(DEFAULT_SPA_THRESHOLDS[1]);
-    expect(DEFAULT_SPA_THRESHOLDS[1]).toBeLessThan(DEFAULT_SPA_THRESHOLDS[2]);
-    expect(DEFAULT_SPA_THRESHOLDS[2]).toBeLessThan(DEFAULT_SPA_THRESHOLDS[3]);
+  it('is strictly increasing in every unit', () => {
+    for (const unit of TEMP_UNITS) {
+      const t = DEFAULT_SPA_THRESHOLDS[unit];
+      expect(t, unit).toHaveLength(4);
+      expect(t[0], unit).toBeLessThan(t[1]);
+      expect(t[1], unit).toBeLessThan(t[2]);
+      expect(t[2], unit).toBeLessThan(t[3]);
+    }
   });
 
-  it('has higher values than pool thresholds', () => {
-    expect(DEFAULT_SPA_THRESHOLDS[0]).toBeGreaterThan(DEFAULT_POOL_THRESHOLDS[0]);
+  it('has higher values than pool thresholds in every unit', () => {
+    for (const unit of TEMP_UNITS) {
+      expect(DEFAULT_SPA_THRESHOLDS[unit][0], unit).toBeGreaterThan(
+        DEFAULT_POOL_THRESHOLDS[unit][0],
+      );
+    }
   });
 });
 

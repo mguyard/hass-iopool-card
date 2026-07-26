@@ -28,6 +28,7 @@ import {
 } from './const';
 import { resolveEntities } from './helpers/device';
 import { validateThresholds, resolveThresholds } from './helpers/thresholds';
+import { getTemperatureUnit } from './helpers/temperature';
 import { DebugLogger } from './helpers/debug';
 import { resolvePoolName } from './helpers/pool-name';
 import { valueToZone, valueToFillPct, phToZone, orpToZone } from './helpers/zone';
@@ -417,10 +418,13 @@ export class IopoolCard extends LitElement {
 
     // --- Temperature ---
     const tempEntityId = this._entities?.temperature;
+    // Display unit for this entity — drives both the resolved thresholds (below)
+    // and every temperature label rendered by this card (gauge, chart).
+    const tempUnit = getTemperatureUnit(this._hass, tempEntityId);
     const tempValue = tempEntityId
       ? parseFloat(this._hass.states[tempEntityId]?.state ?? 'NaN')
       : null;
-    const thresholds = resolveThresholds(this._config);
+    const thresholds = resolveThresholds(this._config, tempUnit);
     const tempZone =
       tempValue !== null && !isNaN(tempValue) ? valueToZone(tempValue, thresholds) : 'unknown';
     // fillPercent expects 0-1 range; valueToFillPct returns 0-100.
@@ -516,7 +520,7 @@ export class IopoolCard extends LitElement {
                           class="${flags.tempGaugeGrayed ? 'iopool-grayed' : ''}"
                           .label=${'TEMP.'}
                           .value=${tempValue}
-                          .unit=${'°C'}
+                          .unit=${tempUnit}
                           .target=${tempTarget}
                           .targetHigh=${thresholds[2]}
                           .zone=${tempZone}
@@ -608,6 +612,7 @@ export class IopoolCard extends LitElement {
                     .period=${this._config.chart_period ?? DEFAULT_CHART_PERIOD}
                     .language=${lang}
                     .thresholds=${thresholds}
+                    .unit=${tempUnit}
                     @period-change=${this._handlePeriodChange}
                   ></iopool-temperature-chart>
                 </div>

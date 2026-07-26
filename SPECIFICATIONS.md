@@ -602,7 +602,7 @@ This resolution is called on **every render**. When the user renames the device 
 | Filtration active | `_filtration` | binary_sensor | `on` / `off`. Attribute: `filtration_duration_minutes` (target duration in minutes) |
 | Elapsed filtration | `_elapsed_filtration_duration` | sensor | Hours (float) |
 | iopool recommendation | `_filtration_recommendation` | sensor | Minutes (integer) |
-| Temperature | `_temperature` | sensor | °C (float) |
+| Temperature | `_temperature` | sensor | Native unit °C (float); Home Assistant may convert to °F/K for display — see §6.3.1 |
 | pH | `_ph` | sensor | float |
 | ORP | `_orp` | sensor | mV (float) |
 
@@ -728,11 +728,57 @@ Each measure uses **4 transition values** that delimit 5 zones (red-low / yellow
 
 | Measure | Default thresholds (4 transitions) | Zones |
 |---|---|---|
-| **Temperature** | `[15, 20.5, 29, 32]` | <15 red, 15-20.5 yellow, 20.5-29 green, 29-32 yellow, >32 red |
+| **Temperature** | `[15, 20.5, 29, 32]` (°C) | <15 red, 15-20.5 yellow, 20.5-29 green, 29-32 yellow, >32 red |
 | **pH** (fixed) | `[6.8, 7.1, 7.7, 8.1]` | <6.8 red, 6.8-7.1 yellow, 7.1-7.7 green, 7.7-8.1 yellow, >8.1 red |
 | **ORP** (fixed) | `[550, 650, 800, 1000]` | <550 red, 550-650 yellow, 650-800 green, 800-1000 yellow, >1000 red |
 
 Only **temperature thresholds** are customizable through the editor. pH and ORP are fixed at the values above in v1.
+
+#### Temperature display unit (mguyard/hass-iopool-card#15, ref. mguyard/hass-iopool#90)
+
+The iopool integration always reports temperature in Celsius at the source
+(`native_unit_of_measurement`), but Home Assistant converts it to the user's
+preferred unit before it reaches the card — the entity's `state` and
+`unit_of_measurement` attribute may be °C, °F, or K depending on the system-wide
+unit system or a per-entity override. The card must classify and display values
+using that same unit, not assume Celsius. Settled decisions:
+
+- **D1 — Storage unit.** `temperature_thresholds` in YAML/editor config are stored
+  in the entity's *current display unit*, not in a canonical unit. What the user
+  reads in the editor, on the gauge/chart, and in their YAML is always identical.
+  Consequence: if the display unit changes after thresholds were customized, the
+  stored numbers are read as-is in the new unit (no silent conversion) — visible
+  via the unit suffix on each editor field, and fixable with one click on a preset.
+- **D2 — Unit resolution order.** `getTemperatureUnit()` resolves the unit as: (1)
+  the temperature entity's `unit_of_measurement` attribute, (2)
+  `hass.config.unit_system.temperature`, (3) `°C` as a safety fallback. The
+  per-entity override always wins over the global unit system.
+- **D3 — No new config key.** There is no `temperature_unit` setting; the display
+  unit is derived entirely from Home Assistant state, avoiding a second, driftable
+  source of truth.
+- **D4 — Three units supported.** `°C`, `°F`, and `K` — matching the options Home
+  Assistant itself offers for the `temperature` device class unit override.
+- **D5 — Mixed-unit chart history is out of scope**, permanently. `history/period`
+  returns states as recorded, so points collected before a unit change stay in the
+  old unit on the same chart axis. This is rare, transient (resolves once old
+  points age out of the recorder's retention window), and is documented as a known
+  limitation rather than fixed by migrating to long-term statistics.
+- **D6 — No migration of existing configs.** Already-saved threshold values are
+  never rewritten when the unit changes.
+
+Pool and spa presets exist per unit (°F/K values are rounded, not exact
+conversions — see `DEFAULT_POOL_THRESHOLDS` / `DEFAULT_SPA_THRESHOLDS` in
+`src/const.ts`):
+
+| Preset | °C | °F | K |
+|---|---|---|---|
+| Pool | `[15, 20.5, 29, 32]` | `[59, 69, 84, 90]` | `[288, 293.5, 302, 305]` |
+| Spa | `[28, 32, 36, 38]` | `[82, 90, 97, 100]` | `[301, 305, 309, 311]` |
+
+Band widths and axis paddings expressed as temperature *deltas* (chart gradient
+transition band, Y-axis padding) are scaled by `degreeScale(unit)` — 1.8 for °F, 1
+for °C/K — rather than converted with an absolute offset, since a delta and an
+absolute value convert differently (see `src/helpers/temperature.ts`).
 
 #### Zone calculation
 
@@ -941,7 +987,7 @@ The countdown must refresh **once per second** (`setInterval(1000)`) while the c
 - Live update: on each state change of the temperature entity, append the new point to the chart without a full re-fetch.
 
 #### Native SVG rendering
-- Y-axis: 4 graduations (temperature in °C, range adapted to data).
+- Y-axis: 4 graduations (temperature in the entity's current display unit — °C, °F, or K; range adapted to data — see §6.3.1).
 - X-axis: 5 graduations (dates/hours based on period).
 - Smoothed line (Bézier curve).
 - Gradient area below the curve (iopool teal, fading to transparent).

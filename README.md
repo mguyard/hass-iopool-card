@@ -64,7 +64,7 @@ device_id: YOUR_DEVICE_ID
 | `pump_entity`            | string             | none        | Optional pump switch entity, such as `switch.pool_pump` |
 | `show_chart`             | boolean            | `true`      | Show or hide the temperature chart                      |
 | `chart_period`           | 24, 48, 96, 168    | `48`        | Chart window in hours                                   |
-| `temperature_thresholds` | tuple of 4 numbers | pool preset | Temperature zone transition values                      |
+| `temperature_thresholds` | tuple of 4 numbers | pool preset | Temperature zone transition values, expressed in your entity's current display unit (°C, °F, or K) |
 | `debug`                  | boolean            | `false`     | YAML-only console debug mode                            |
 | `section_actions`        | object             | more-info   | Per-section tap actions                                 |
 

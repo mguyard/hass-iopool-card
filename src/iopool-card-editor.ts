@@ -4,11 +4,14 @@ import type {
   ActionConfig,
   HomeAssistant,
   IopoolCardConfig,
+  ResolvedEntities,
   SectionActions,
   TemperatureThresholds,
 } from './types';
 import { DEFAULT_CHART_PERIOD, DEFAULT_POOL_THRESHOLDS, DEFAULT_SPA_THRESHOLDS } from './const';
 import { validateThresholds } from './helpers/thresholds';
+import { resolveEntities } from './helpers/device';
+import { getTemperatureUnit, type TempUnit } from './helpers/temperature';
 import en from './locales/en.json';
 import fr from './locales/fr.json';
 
@@ -47,17 +50,55 @@ type SectionKey = (typeof SECTION_KEYS)[number];
 const THRESHOLD_INDICES = [0, 1, 2, 3] as const;
 type ThresholdIndex = (typeof THRESHOLD_INDICES)[number];
 
+// Threshold number-selector bounds per display unit — same physical range in each
+// unit. A 0.5-step in °F would imply a precision meaningless for a pool, hence 1.
+const THRESHOLD_SELECTOR_BOUNDS: Record<TempUnit, { min: number; max: number; step: number }> = {
+  '°C': { min: -20, max: 50, step: 0.5 },
+  '°F': { min: -4, max: 122, step: 1 },
+  K: { min: 253, max: 323, step: 0.5 },
+};
+
 // ---------------------------------------------------------------------------
 // Editor component
 // ---------------------------------------------------------------------------
 
 @customElement('iopool-card-editor')
 export class IopoolCardEditor extends LitElement {
-  @property({ attribute: false }) public hass?: HomeAssistant;
+  // HA sets hass directly via property assignment on every state change.
+  // We intercept it to lazy-resolve entities, mirroring iopool-card.ts's own pattern.
+  private _hass?: HomeAssistant;
+
   @state() private _config?: IopoolCardConfig;
   @state() private _validationError: string | undefined = undefined;
+  @state() private _entities?: ResolvedEntities;
+
+  // Last device_id for which entities were resolved — used to detect changes.
+  private _prevDeviceId?: string;
+
+  @property({ attribute: false })
+  set hass(hass: HomeAssistant) {
+    this._hass = hass;
+    if (this._config?.device_id && this._config.device_id !== this._prevDeviceId) {
+      this._entities = resolveEntities(hass, this._config.device_id);
+      this._prevDeviceId = this._config.device_id;
+    }
+  }
+
+  get hass(): HomeAssistant | undefined {
+    return this._hass;
+  }
+
+  // Resolved temperature display unit — drives selector bounds, labels and presets
+  // (decision D2 in the referenced issue: entity override wins over unit_system).
+  private get _tempUnit(): TempUnit {
+    return getTemperatureUnit(this._hass, this._entities?.temperature);
+  }
 
   public setConfig(config: IopoolCardConfig): void {
+    if (this._hass && config.device_id && config.device_id !== this._prevDeviceId) {
+      this._entities = resolveEntities(this._hass, config.device_id);
+      this._prevDeviceId = config.device_id;
+    }
     this._config = config;
     this._validationError = undefined;
   }
@@ -145,16 +186,20 @@ export class IopoolCardEditor extends LitElement {
 
   private _applyPreset(type: 'pool' | 'spa'): void {
     if (!this._config) return;
-    const thresholds: TemperatureThresholds =
-      type === 'pool' ? DEFAULT_POOL_THRESHOLDS : DEFAULT_SPA_THRESHOLDS;
+    const table = type === 'pool' ? DEFAULT_POOL_THRESHOLDS : DEFAULT_SPA_THRESHOLDS;
+    // Presets are written in the entity's current display unit (decision D1 in the
+    // referenced issue) — no conversion, the table already has per-unit values.
+    const thresholds: TemperatureThresholds = table[this._tempUnit];
     this._dispatchConfig({ ...this._config, temperature_thresholds: thresholds });
   }
 
   private _thresholdChanged(index: ThresholdIndex, value: number): void {
     if (!this._config) return;
+    // The entered value is written as-is, in the entity's current display unit —
+    // no conversion (decision D1).
     const current: TemperatureThresholds = this._config.temperature_thresholds
       ? ([...this._config.temperature_thresholds] as TemperatureThresholds)
-      : ([...DEFAULT_POOL_THRESHOLDS] as TemperatureThresholds);
+      : ([...DEFAULT_POOL_THRESHOLDS[this._tempUnit]] as TemperatureThresholds);
     current[index] = value;
 
     if (!validateThresholds(current)) {
@@ -271,8 +316,10 @@ export class IopoolCardEditor extends LitElement {
     if (!this._config) return html``;
 
     const lang = this._lang;
+    const tempUnit = this._tempUnit;
     const thresholds: TemperatureThresholds =
-      this._config.temperature_thresholds ?? DEFAULT_POOL_THRESHOLDS;
+      this._config.temperature_thresholds ?? DEFAULT_POOL_THRESHOLDS[tempUnit];
+    const thresholdBounds = THRESHOLD_SELECTOR_BOUNDS[tempUnit];
 
     // Per-field schemas — full _config is still passed as data so ha-form emits
     // the complete config object with the changed field updated.
@@ -345,7 +392,15 @@ export class IopoolCardEditor extends LitElement {
                       </div>
                       <ha-selector
                         .hass=${this.hass}
-                        .selector=${{ number: { min: -20, max: 50, step: 0.5, mode: 'box' } }}
+                        .selector=${{
+                          number: {
+                            min: thresholdBounds.min,
+                            max: thresholdBounds.max,
+                            step: thresholdBounds.step,
+                            mode: 'box',
+                            unit_of_measurement: tempUnit,
+                          },
+                        }}
                         .value=${thresholds[i]}
                         @value-changed=${(ev: CustomEvent<{ value: number }>) =>
                           this._thresholdChanged(i, ev.detail.value)}
