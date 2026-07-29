@@ -1,3 +1,11 @@
+# [1.2.0-beta.1](https://github.com/mguyard/hass-iopool-card/compare/v1.1.0...v1.2.0-beta.1) (2026-07-29)
+
+
+### Features
+
+* **temperature:** support Fahrenheit and Kelvin display units ([30f526e](https://github.com/mguyard/hass-iopool-card/commit/30f526e1e57ddddbd677227685dfca3759e06b0d)), closes [#15](https://github.com/mguyard/hass-iopool-card/issues/15)
+* **theme:** ✨ Add automatic dark mode support ([6e17059](https://github.com/mguyard/hass-iopool-card/commit/6e170599344747e396517827cffbd4d0a163fcc5)), closes [#14](https://github.com/mguyard/hass-iopool-card/issues/14)
+
 # [1.1.0](https://github.com/mguyard/hass-iopool-card/compare/v1.0.0...v1.1.0) (2026-06-14)
 
 
