@@ -4,6 +4,7 @@ import ApexCharts from 'apexcharts';
 import { fetchTemperatureHistory } from '../helpers/history';
 import { DebugLogger } from '../helpers/debug';
 import { valueToZone, zoneToColor } from '../helpers/zone';
+import { degreeScale, type TempUnit } from '../helpers/temperature';
 import en from '../locales/en.json';
 import fr from '../locales/fr.json';
 import { sharedStyles } from '../styles';
@@ -60,9 +61,17 @@ export class IopoolTemperatureChart extends LitElement {
 
   /**
    * Resolved temperature thresholds used to compute gradient colorStops.
-   * Defaults to DEFAULT_POOL_THRESHOLDS when the parent does not pass this prop.
+   * Defaults to the °C pool preset when the parent does not pass this prop.
    */
-  @property({ attribute: false }) thresholds: TemperatureThresholds = DEFAULT_POOL_THRESHOLDS;
+  @property({ attribute: false }) thresholds: TemperatureThresholds = DEFAULT_POOL_THRESHOLDS['°C'];
+
+  /**
+   * Display unit for the entity's temperature values. History data fetched via
+   * fetchTemperatureHistory() is already expressed in this unit (HA converts on
+   * read, before the recorder stores it) — no conversion happens in this component.
+   * Only band widths and axis padding (temperature deltas) are scaled by unit.
+   */
+  @property() unit: TempUnit = '°C';
 
   @state() private _seriesData: SeriesPoint[] = [];
 
@@ -131,6 +140,13 @@ export class IopoolTemperatureChart extends LitElement {
     const shouldReload =
       changedProps.has('entityId') ||
       changedProps.has('period') ||
+      // A unit change (e.g. per-entity override toggled without an HA restart)
+      // means _seriesData is stale: history/period returns values in whichever
+      // unit was current at fetch time, so a full refetch is required — merely
+      // recomputing colorStops (the `thresholds` branch below) is not enough,
+      // and may not even trigger if the config thresholds object kept the same
+      // reference across the unit change.
+      changedProps.has('unit') ||
       // Only reload on the first hass assignment, not on every HA state update.
       (changedProps.has('hass') &&
         changedProps.get('hass') === undefined &&
@@ -223,7 +239,10 @@ export class IopoolTemperatureChart extends LitElement {
     if (values.length === 0) return { yMin: 18, yMax: 34 };
     const min = Math.min(...values);
     const max = Math.max(...values);
-    return { yMin: min - 0.5, yMax: max + 0.5 };
+    // Padding is a temperature DELTA, not an absolute value — scale by the degree
+    // size of the current unit (0.9 in °F) rather than converting min/max themselves.
+    const pad = 0.5 * degreeScale(this.unit);
+    return { yMin: min - pad, yMax: max + pad };
   }
 
   // ─── Gradient colorStops ──────────────────────────────────────────────────────
@@ -253,11 +272,13 @@ export class IopoolTemperatureChart extends LitElement {
     const stops: ColorStop[] = [];
     stops.push({ offset: 0, color: getColor(yMax), opacity: 1 });
 
-    // Transition band: ±0.5 °C around each threshold in temperature space.
-    // This gives a 1 °C wide interpolation zone — wide enough to avoid the "kink" artifact
-    // that occurs when two stops are at nearly identical offsets, yet narrow enough that
-    // values 0.9 °C below a threshold already read as the correct lower zone color.
-    const halfBand = 0.5; // °C
+    // Transition band: ±0.5 °C (scaled to the current unit) around each threshold
+    // in temperature space. This gives a ~1-degree wide interpolation zone — wide
+    // enough to avoid the "kink" artifact that occurs when two stops are at nearly
+    // identical offsets, yet narrow enough that values just below a threshold
+    // already read as the correct lower zone color. `this.thresholds` is already
+    // expressed in `this.unit`, so the band must be too (0.9 in °F, not 0.5).
+    const halfBand = 0.5 * degreeScale(this.unit);
     const boundaries = [...this.thresholds].sort((a, b) => b - a);
     for (const threshold of boundaries) {
       if (threshold > yMin && threshold < yMax) {
@@ -583,7 +604,9 @@ export class IopoolTemperatureChart extends LitElement {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        border: 2px solid white;
+        /* Cut-out ring around the dot: matches the card background so it stays
+           a separator in both themes (resolves to white on a light card). */
+        border: 2px solid var(--card-background-color, #fff);
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         transform: translate(-50%, -50%);
         pointer-events: none;
@@ -653,7 +676,7 @@ export class IopoolTemperatureChart extends LitElement {
               ${t(this.language, 'chart.temperature')}
             </div>
             <div class="temperature-chart__current">
-              ${displayTempStr}<span class="temperature-chart__current-unit">°C</span>
+              ${displayTempStr}<span class="temperature-chart__current-unit">${this.unit}</span>
             </div>
             <!-- Point date shown only while hovering; empty slot keeps layout stable otherwise -->
             <div class="temperature-chart__point-date">
@@ -697,7 +720,7 @@ export class IopoolTemperatureChart extends LitElement {
           <div class="stat">
             <div class="stat__label">${t(this.language, 'chart.min')}</div>
             <div class="stat__value">
-              ${stats.min !== null ? `${this._formatNum(stats.min.y)}°C` : '--'}
+              ${stats.min !== null ? `${this._formatNum(stats.min.y)}${this.unit}` : '--'}
             </div>
             <div class="stat__date">
               ${stats.min !== null ? this._formatStatDate(stats.min.x) : ''}
@@ -707,7 +730,7 @@ export class IopoolTemperatureChart extends LitElement {
           <div class="stat">
             <div class="stat__label">${t(this.language, 'chart.avg')}</div>
             <div class="stat__value">
-              ${stats.avg !== null ? `${this._formatNum(stats.avg)}°C` : '--'}
+              ${stats.avg !== null ? `${this._formatNum(stats.avg)}${this.unit}` : '--'}
             </div>
             <div class="stat__date">${t(this.language, periodKey)}</div>
           </div>
@@ -715,7 +738,7 @@ export class IopoolTemperatureChart extends LitElement {
           <div class="stat">
             <div class="stat__label">${t(this.language, 'chart.max')}</div>
             <div class="stat__value">
-              ${stats.max !== null ? `${this._formatNum(stats.max.y)}°C` : '--'}
+              ${stats.max !== null ? `${this._formatNum(stats.max.y)}${this.unit}` : '--'}
             </div>
             <div class="stat__date">
               ${stats.max !== null ? this._formatStatDate(stats.max.x) : ''}

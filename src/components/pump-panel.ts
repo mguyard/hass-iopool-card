@@ -669,7 +669,9 @@ export class IopoolPumpPanel extends LitElement {
 
       .pump-panel__boost-btn--active {
         background: var(--iopool-green, #7ed321);
-        color: #fff;
+        /* Fixed ink over a fixed brand background — see the matching rule on
+           .mode-selector__button--active. 1.87:1 with white, 9.30:1 here. */
+        color: #1a1a1a;
         border-color: transparent;
         box-shadow: 0 2px 8px color-mix(in srgb, var(--iopool-green, #7ed321) 30%, transparent);
       }

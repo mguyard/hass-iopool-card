@@ -51,6 +51,8 @@ export interface HomeAssistant {
   language: string;
   locale?: { language: string };
   themes?: { darkMode: boolean };
+  /** Global unit system, used as a fallback when an entity has no unit override (see helpers/temperature.ts). */
+  config?: { unit_system?: { temperature?: string } };
   states: Record<string, HassEntity>;
   entities: Record<string, EntityRegistryEntry>;
   devices: Record<string, DeviceRegistryEntry>;

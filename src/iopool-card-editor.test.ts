@@ -112,6 +112,51 @@ describe('IopoolCardEditor render', () => {
     expect(selectors?.length).toBe(4);
   });
 
+  it('uses the °C selector bounds and unit_of_measurement when no unit override is present', async () => {
+    const editor = createEditor({ hass: buildMockHass() });
+    editor.setConfig(VALID_CONFIG);
+    await (editor as WithUpdateComplete).updateComplete;
+    const selector = editor.shadowRoot?.querySelector('.threshold-field ha-selector') as
+      | (HTMLElement & { selector?: { number?: Record<string, unknown> } })
+      | undefined;
+    expect(selector?.selector?.number).toMatchObject({
+      min: -20,
+      max: 50,
+      step: 0.5,
+      unit_of_measurement: '°C',
+    });
+  });
+
+  it('uses the °F selector bounds when the temperature entity is displayed in °F', async () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.pool_temperature': {
+          entity_id: 'sensor.pool_temperature',
+          device_id: 'device-abc123',
+        } as never,
+      },
+      states: {
+        'sensor.pool_temperature': {
+          entity_id: 'sensor.pool_temperature',
+          state: '82',
+          attributes: { unit_of_measurement: '°F' },
+        } as never,
+      },
+    });
+    const editor = createEditor({ hass });
+    editor.setConfig(VALID_CONFIG);
+    await (editor as WithUpdateComplete).updateComplete;
+    const selector = editor.shadowRoot?.querySelector('.threshold-field ha-selector') as
+      | (HTMLElement & { selector?: { number?: Record<string, unknown> } })
+      | undefined;
+    expect(selector?.selector?.number).toMatchObject({
+      min: -4,
+      max: 122,
+      step: 1,
+      unit_of_measurement: '°F',
+    });
+  });
+
   it('renders the collapsible section-actions details element', async () => {
     const editor = createEditor({ hass: buildMockHass() });
     editor.setConfig(VALID_CONFIG);
@@ -318,7 +363,7 @@ describe('IopoolCardEditor pump_entity validation', () => {
 // ---------------------------------------------------------------------------
 
 describe('IopoolCardEditor._applyPreset', () => {
-  it('dispatches config-changed with DEFAULT_POOL_THRESHOLDS for the pool preset', () => {
+  it('dispatches config-changed with the °C pool preset when no unit override is present', () => {
     const editor = createEditor({ hass: buildMockHass() });
     editor.setConfig(VALID_CONFIG);
 
@@ -329,10 +374,10 @@ describe('IopoolCardEditor._applyPreset', () => {
 
     asInternals(editor)._applyPreset('pool');
 
-    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_POOL_THRESHOLDS);
+    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_POOL_THRESHOLDS['°C']);
   });
 
-  it('dispatches config-changed with DEFAULT_SPA_THRESHOLDS for the spa preset', () => {
+  it('dispatches config-changed with the °C spa preset when no unit override is present', () => {
     const editor = createEditor({ hass: buildMockHass() });
     editor.setConfig(VALID_CONFIG);
 
@@ -343,7 +388,7 @@ describe('IopoolCardEditor._applyPreset', () => {
 
     asInternals(editor)._applyPreset('spa');
 
-    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_SPA_THRESHOLDS);
+    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_SPA_THRESHOLDS['°C']);
   });
 
   it('does nothing when config has not been set yet', () => {
@@ -375,7 +420,36 @@ describe('IopoolCardEditor._applyPreset', () => {
     asInternals(editor)._applyPreset('spa');
 
     expect(emitted?.pump_entity).toBe('switch.pool_pump');
-    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_SPA_THRESHOLDS);
+    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_SPA_THRESHOLDS['°C']);
+  });
+
+  it('dispatches the °F pool preset when the temperature entity is displayed in °F', () => {
+    const hass = buildMockHass({
+      entities: {
+        'sensor.pool_temperature': {
+          entity_id: 'sensor.pool_temperature',
+          device_id: 'device-abc123',
+        } as never,
+      },
+      states: {
+        'sensor.pool_temperature': {
+          entity_id: 'sensor.pool_temperature',
+          state: '82',
+          attributes: { unit_of_measurement: '°F' },
+        } as never,
+      },
+    });
+    const editor = createEditor({ hass });
+    editor.setConfig(VALID_CONFIG);
+
+    let emitted: IopoolCardConfig | undefined;
+    editor.addEventListener('config-changed', (ev) => {
+      emitted = (ev as CustomEvent<{ config: IopoolCardConfig }>).detail.config;
+    });
+
+    asInternals(editor)._applyPreset('pool');
+
+    expect(emitted?.temperature_thresholds).toEqual(DEFAULT_POOL_THRESHOLDS['°F']);
   });
 });
 
@@ -751,7 +825,7 @@ describe('IopoolCardEditor._thresholdZonePcts', () => {
 
   it('uses pool preset thresholds and returns proportional inner percentages', () => {
     const editor = createEditor({ hass: buildMockHass() });
-    const pcts = asInternals(editor)._thresholdZonePcts(DEFAULT_POOL_THRESHOLDS);
+    const pcts = asInternals(editor)._thresholdZonePcts(DEFAULT_POOL_THRESHOLDS['°C']);
     expect(pcts).toHaveLength(5);
     const sum = pcts.reduce((a, b) => a + b, 0);
     expect(sum).toBeCloseTo(100, 5);

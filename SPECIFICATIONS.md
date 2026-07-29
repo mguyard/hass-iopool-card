@@ -602,7 +602,7 @@ This resolution is called on **every render**. When the user renames the device 
 | Filtration active | `_filtration` | binary_sensor | `on` / `off`. Attribute: `filtration_duration_minutes` (target duration in minutes) |
 | Elapsed filtration | `_elapsed_filtration_duration` | sensor | Hours (float) |
 | iopool recommendation | `_filtration_recommendation` | sensor | Minutes (integer) |
-| Temperature | `_temperature` | sensor | °C (float) |
+| Temperature | `_temperature` | sensor | Native unit °C (float); Home Assistant may convert to °F/K for display — see §6.3.1 |
 | pH | `_ph` | sensor | float |
 | ORP | `_orp` | sensor | mV (float) |
 
@@ -728,11 +728,57 @@ Each measure uses **4 transition values** that delimit 5 zones (red-low / yellow
 
 | Measure | Default thresholds (4 transitions) | Zones |
 |---|---|---|
-| **Temperature** | `[15, 20.5, 29, 32]` | <15 red, 15-20.5 yellow, 20.5-29 green, 29-32 yellow, >32 red |
+| **Temperature** | `[15, 20.5, 29, 32]` (°C) | <15 red, 15-20.5 yellow, 20.5-29 green, 29-32 yellow, >32 red |
 | **pH** (fixed) | `[6.8, 7.1, 7.7, 8.1]` | <6.8 red, 6.8-7.1 yellow, 7.1-7.7 green, 7.7-8.1 yellow, >8.1 red |
 | **ORP** (fixed) | `[550, 650, 800, 1000]` | <550 red, 550-650 yellow, 650-800 green, 800-1000 yellow, >1000 red |
 
 Only **temperature thresholds** are customizable through the editor. pH and ORP are fixed at the values above in v1.
+
+#### Temperature display unit (mguyard/hass-iopool-card#15, ref. mguyard/hass-iopool#90)
+
+The iopool integration always reports temperature in Celsius at the source
+(`native_unit_of_measurement`), but Home Assistant converts it to the user's
+preferred unit before it reaches the card — the entity's `state` and
+`unit_of_measurement` attribute may be °C, °F, or K depending on the system-wide
+unit system or a per-entity override. The card must classify and display values
+using that same unit, not assume Celsius. Settled decisions:
+
+- **D1 — Storage unit.** `temperature_thresholds` in YAML/editor config are stored
+  in the entity's *current display unit*, not in a canonical unit. What the user
+  reads in the editor, on the gauge/chart, and in their YAML is always identical.
+  Consequence: if the display unit changes after thresholds were customized, the
+  stored numbers are read as-is in the new unit (no silent conversion) — visible
+  via the unit suffix on each editor field, and fixable with one click on a preset.
+- **D2 — Unit resolution order.** `getTemperatureUnit()` resolves the unit as: (1)
+  the temperature entity's `unit_of_measurement` attribute, (2)
+  `hass.config.unit_system.temperature`, (3) `°C` as a safety fallback. The
+  per-entity override always wins over the global unit system.
+- **D3 — No new config key.** There is no `temperature_unit` setting; the display
+  unit is derived entirely from Home Assistant state, avoiding a second, driftable
+  source of truth.
+- **D4 — Three units supported.** `°C`, `°F`, and `K` — matching the options Home
+  Assistant itself offers for the `temperature` device class unit override.
+- **D5 — Mixed-unit chart history is out of scope**, permanently. `history/period`
+  returns states as recorded, so points collected before a unit change stay in the
+  old unit on the same chart axis. This is rare, transient (resolves once old
+  points age out of the recorder's retention window), and is documented as a known
+  limitation rather than fixed by migrating to long-term statistics.
+- **D6 — No migration of existing configs.** Already-saved threshold values are
+  never rewritten when the unit changes.
+
+Pool and spa presets exist per unit (°F/K values are rounded, not exact
+conversions — see `DEFAULT_POOL_THRESHOLDS` / `DEFAULT_SPA_THRESHOLDS` in
+`src/const.ts`):
+
+| Preset | °C | °F | K |
+|---|---|---|---|
+| Pool | `[15, 20.5, 29, 32]` | `[59, 69, 84, 90]` | `[288, 293.5, 302, 305]` |
+| Spa | `[28, 32, 36, 38]` | `[82, 90, 97, 100]` | `[301, 305, 309, 311]` |
+
+Band widths and axis paddings expressed as temperature *deltas* (chart gradient
+transition band, Y-axis padding) are scaled by `degreeScale(unit)` — 1.8 for °F, 1
+for °C/K — rather than converted with an absolute offset, since a delta and an
+absolute value convert differently (see `src/helpers/temperature.ts`).
 
 #### Zone calculation
 
@@ -941,7 +987,7 @@ The countdown must refresh **once per second** (`setInterval(1000)`) while the c
 - Live update: on each state change of the temperature entity, append the new point to the chart without a full re-fetch.
 
 #### Native SVG rendering
-- Y-axis: 4 graduations (temperature in °C, range adapted to data).
+- Y-axis: 4 graduations (temperature in the entity's current display unit — °C, °F, or K; range adapted to data — see §6.3.1).
 - X-axis: 5 graduations (dates/hours based on period).
 - Smoothed line (Bézier curve).
 - Gradient area below the curve (iopool teal, fading to transparent).
@@ -1057,8 +1103,8 @@ The card uses **HA CSS variables in priority** for theme integration, and adds c
   --iopool-red: #D0021B;
   --iopool-grad-button: linear-gradient(135deg, #51AFE7 0%, #62D2C6 100%);
   --iopool-grad-main: linear-gradient(180deg, #42BDAA 0%, #2C7C70 100%);
-  --iopool-gauge-bg: #EAF4F2;
-  --iopool-gauge-bg-dark: #1a2625;
+  /* Derived, not fixed — see §7.7. Resolves to #EAF4F2 on a light card. */
+  --iopool-gauge-bg: color-mix(in srgb, var(--iopool-primary) 9%, var(--card-background-color));
 }
 ```
 
@@ -1157,31 +1203,94 @@ class IopoolLiquidGauge extends LitElement {
 
 When `unavailable === true`, the gauge shows "—", liquid at 0%, no animation.
 
-### 7.7 Dark mode detection
+### 7.7 Dark mode
 
-Use HA's exposed `hass.themes.darkMode` (boolean). Fall back to media query if not present:
+**There is no mode detection.** The card never reads `hass.themes.darkMode`, never
+queries `prefers-color-scheme`, and never branches on a `dark` flag. Every colour
+that would otherwise be calibrated for a light background is instead *derived*
+from a HA theme variable that already switches, so dark mode falls out for free —
+including for custom themes, which a hardcoded dark palette would not cover.
 
-```typescript
-function isDarkMode(hass: HomeAssistant): boolean {
-  if (typeof hass.themes?.darkMode === 'boolean') return hass.themes.darkMode;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-}
-```
+Two anchors carry the whole design:
 
-Liquid colors are JS-defined to avoid harsh contrast in light theme:
+| Anchor | Used for | Light | Dark |
+|---|---|---|---|
+| `--card-background-color` | surfaces, halos, cut-out rings, liquid blending | `#ffffff` | `#1c1c1c` |
+| `--primary-text-color` | text that must stay readable on a tinted pill | `#212121` | `#e1e1e1` |
 
-```typescript
-const LIQUID_COLORS_LIGHT = {
-  green:  { stop1: '#9EE040', stop2: '#6BB81B' },
-  orange: { stop1: '#FFC25C', stop2: '#E89010' },
-  red:    { stop1: '#FF6B6B', stop2: '#B8011A' },
-};
-const LIQUID_COLORS_DARK = {
-  green:  { stop1: '#5CA80F', stop2: '#3A7708' },
-  orange: { stop1: '#C77808', stop2: '#8E5605' },
-  red:    { stop1: '#A8001F', stop2: '#6B0014' },
-};
-```
+Three patterns:
+
+1. **Surfaces** — mix the brand colour into the card background:
+   `color-mix(in srgb, var(--iopool-primary) 9%, var(--card-background-color))`.
+   Resolves to `rgb(234,244,243)` on white (the historical `#eaf4f2`) and to
+   `#1c2524` on `#1c1c1c`.
+2. **Halos and cut-out rings** — mix the card background with `transparent`:
+   `color-mix(in srgb, var(--card-background-color) 80%, transparent)` is exactly
+   `rgba(255,255,255,.8)` on a light card and turns dark on a dark one.
+3. **Tinted text** (status pills, badges, banner) — mix the accent toward
+   `--primary-text-color` instead of `black`. The ratio must be **lowered**
+   versus a black anchor to compensate for `#212121`; the values in the code are
+   calibrated to hold light-mode relative luminance within 3%.
+
+Liquid waves blend toward the tile background rather than using `opacity`, with
+the former alpha values as mix ratios (90% / 45%) — light output is unchanged and
+the wave desaturates on its own as the tile darkens.
+
+Badges whose text is a raw brand colour (`--iopool-primary` on the mode and debug
+badges) follow the pattern of the status pills — mixed toward
+`--primary-text-color` at 75%, which clears AA on both sides (5.89:1 light,
+4.51:1 dark) at the cost of a deeper teal in light.
+
+#### Known limitation: the value text over a filled gauge
+
+The value text follows the theme; the liquid under it does not. Over a filled
+amber or green gauge in dark mode, white-on-liquid measures only **2.41:1** and
+**2.23:1** — under the 3:1 AA floor for large text. It was 1.93:1 before the dark
+mode work, so this is an improvement, not a regression, but it is the weakest
+remaining contrast in the card.
+
+A fixed dark ink over those two liquids was implemented and then **reverted**.
+It worked on the numbers (7.2:1 and 7.8:1) but the fix is not available to all
+three gauges at once: an almost-empty gauge has a near-black tile in dark mode
+and still needs white text. The result was a row of sibling gauges rendering
+their values in different colours — a local contrast optimum that read as a
+global inconsistency. A row of gauges is read as one unit; visual consistency
+wins over a ratio on a value that is also displayed elsewhere in the card.
+
+Note the trap for anyone revisiting this: red inverts the arithmetic (`#BE051C`
+gives 6.50:1 with white and 2.68:1 with dark ink), so no single ink is right for
+all three zones either.
+
+What ships instead is a reinforced halo — a near-opaque 2px contour, derived from
+the card background like the rest, layered under the existing soft shadows. WCAG
+cannot score a text-shadow, so the measured ratio is unchanged; legibility over
+an arbitrary backdrop is nonetheless what an outline is for. The remaining route
+to both consistency *and* AA is a scrim behind the value block on every gauge,
+rejected here because it visibly pales the liquid in light mode.
+
+> `light-dark()` was evaluated and rejected: HA leaves `color-scheme` at `normal`,
+> so it would silently resolve to the light value and produce a dark mode that
+> never activates.
+
+**Elevation of inner surfaces.** `--iopool-surface` and `--iopool-surface-strong`
+are anchored on `--primary-text-color` rather than tinted with a fixed teal
+overlay. That anchor always moves *away* from the background — it darkens a light
+card and lightens a dark one — which is the only pure-CSS primitive that lifts a
+panel asymmetrically without knowing the mode. The 2.6% / 5.3% ratios are solved
+so the light-mode luminance matches the former `rgba(23,129,122,.04/.08)`
+overlays exactly:
+
+| | Light | Dark |
+|---|---|---|
+| `--iopool-surface` (HA default) | 1.051 → 1.051 | 1.044 → 1.070 |
+| `--iopool-surface-strong` (HA default) | 1.108 → 1.108 | 1.086 → 1.142 |
+| `--iopool-surface` (Rounded-Bubble) | 1.053 → 1.052 | 1.038 → 1.067 |
+
+A fixed-alpha overlay preserves its contrast *ratio* across themes (compositing
+is proportional to the backdrop), but preserving 1.04 preserves an
+imperceptible separation. The anchored version buys ~60% more perceived
+separation in dark at zero cost in light; the trade is that the surface loses its
+teal cast, which was below the perceptual threshold at 4 RGB units anyway.
 
 ### 7.8 Mobile-first
 

@@ -176,19 +176,23 @@ export class IopoolLiquidGauge extends LitElement {
         backdrop-filter: blur(8px);
       }
 
+      /* Pill text is mixed toward --primary-text-color rather than black so it
+         flips with the theme. Ratios are lowered from 40/40/50 to compensate
+         for the lighter anchor (#212121 vs #000) and keep the light-mode
+         relative luminance within 3% of the previous values. */
       .iopool-liquid-gauge__status.status-ok {
         background: color-mix(in srgb, var(--iopool-green, #7ed321) 25%, transparent);
-        color: color-mix(in srgb, var(--iopool-green) 40%, black);
+        color: color-mix(in srgb, var(--iopool-green) 28%, var(--primary-text-color));
       }
 
       .iopool-liquid-gauge__status.status-warn {
         background: color-mix(in srgb, var(--iopool-orange, #f5a623) 30%, transparent);
-        color: color-mix(in srgb, var(--iopool-orange) 40%, black);
+        color: color-mix(in srgb, var(--iopool-orange) 27%, var(--primary-text-color));
       }
 
       .iopool-liquid-gauge__status.status-bad {
         background: color-mix(in srgb, var(--iopool-red, #d0021b) 25%, transparent);
-        color: color-mix(in srgb, var(--iopool-red) 50%, black);
+        color: color-mix(in srgb, var(--iopool-red) 35%, var(--primary-text-color));
       }
 
       .iopool-liquid-gauge__value-wrap {
@@ -206,9 +210,19 @@ export class IopoolLiquidGauge extends LitElement {
         font-weight: 800;
         letter-spacing: -0.03em;
         color: var(--primary-text-color);
+        /* Halo derived from the card background: near-white on a light card,
+           near-black on a dark one, so it always separates the text from the
+           liquid instead of blurring into it.
+           The tight 2px pass is a legibility contour, not decoration: the text
+           colour follows the theme while the liquid does not, so over a filled
+           amber or green gauge in dark mode the measured ratio is only ~2.4:1.
+           A near-opaque outline is the subtitling answer to text over arbitrary
+           backdrops — it buys real legibility that a contrast ratio cannot
+           score. See SPECIFICATIONS §7.7. */
         text-shadow:
-          0 1px 2px rgba(255, 255, 255, 0.8),
-          0 0 12px rgba(255, 255, 255, 0.6);
+          0 0 2px color-mix(in srgb, var(--card-background-color) 95%, transparent),
+          0 1px 2px color-mix(in srgb, var(--card-background-color) 80%, transparent),
+          0 0 12px color-mix(in srgb, var(--card-background-color) 60%, transparent);
       }
 
       .iopool-liquid-gauge__unit {
@@ -257,12 +271,15 @@ export class IopoolLiquidGauge extends LitElement {
         color: var(--iopool-neutral, #94a39e);
       }
 
+      /* Blending toward the tile background instead of relying on opacity: the
+         mix ratios are the former alpha values, so light mode is unchanged,
+         but the wave now desaturates on its own when the tile goes dark. */
       .iopool-liquid-gauge__wave--primary {
-        opacity: 0.9;
+        fill: color-mix(in srgb, currentColor 90%, var(--iopool-gauge-bg));
       }
 
       .iopool-liquid-gauge__wave--secondary {
-        opacity: 0.45;
+        fill: color-mix(in srgb, currentColor 45%, var(--iopool-gauge-bg));
       }
     `,
   ];

@@ -55,27 +55,33 @@ describe('resolveThresholds', () => {
     return { type: 'custom:iopool-card', device_id: 'abc', ...overrides };
   }
 
-  it('returns DEFAULT_POOL_THRESHOLDS when no temperature_thresholds in config', () => {
+  it('returns the °C preset when no temperature_thresholds in config and no unit given', () => {
     const config = makeConfig();
-    expect(resolveThresholds(config)).toEqual(DEFAULT_POOL_THRESHOLDS);
+    expect(resolveThresholds(config)).toEqual(DEFAULT_POOL_THRESHOLDS['°C']);
   });
 
-  it('returns the user-configured thresholds when valid', () => {
+  it('returns the preset for the requested unit when no temperature_thresholds in config', () => {
+    const config = makeConfig();
+    expect(resolveThresholds(config, '°F')).toEqual(DEFAULT_POOL_THRESHOLDS['°F']);
+    expect(resolveThresholds(config, 'K')).toEqual(DEFAULT_POOL_THRESHOLDS['K']);
+  });
+
+  it('returns the user-configured thresholds unchanged regardless of unit (no conversion)', () => {
     const custom: TemperatureThresholds = [20, 25, 30, 35];
     const config = makeConfig({ temperature_thresholds: custom });
-    expect(resolveThresholds(config)).toEqual(custom);
+    expect(resolveThresholds(config, '°F')).toEqual(custom);
   });
 
-  it('falls back to defaults when user thresholds are invalid (not increasing)', () => {
+  it('falls back to the unit preset when user thresholds are invalid (not increasing)', () => {
     const invalid: TemperatureThresholds = [30, 25, 20, 15];
     const config = makeConfig({ temperature_thresholds: invalid });
-    expect(resolveThresholds(config)).toEqual(DEFAULT_POOL_THRESHOLDS);
+    expect(resolveThresholds(config, '°F')).toEqual(DEFAULT_POOL_THRESHOLDS['°F']);
   });
 
-  it('falls back to defaults when user thresholds have equal values', () => {
+  it('falls back to the unit preset when user thresholds have equal values', () => {
     const invalid: TemperatureThresholds = [15, 20, 20, 32];
     const config = makeConfig({ temperature_thresholds: invalid });
-    expect(resolveThresholds(config)).toEqual(DEFAULT_POOL_THRESHOLDS);
+    expect(resolveThresholds(config)).toEqual(DEFAULT_POOL_THRESHOLDS['°C']);
   });
 
   it('accepts spa thresholds as valid custom thresholds', () => {
@@ -84,8 +90,8 @@ describe('resolveThresholds', () => {
     expect(resolveThresholds(config)).toEqual(spa);
   });
 
-  it('returns the same reference as DEFAULT_POOL_THRESHOLDS when no override', () => {
+  it('returns the same reference as the °C preset when no override and no unit given', () => {
     const config = makeConfig();
-    expect(resolveThresholds(config)).toBe(DEFAULT_POOL_THRESHOLDS);
+    expect(resolveThresholds(config)).toBe(DEFAULT_POOL_THRESHOLDS['°C']);
   });
 });
