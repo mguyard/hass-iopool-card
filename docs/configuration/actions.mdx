@@ -12,11 +12,11 @@ Use `section_actions` to customize interactions per section. The card does not e
 Supported actions are `more-info` (default), `navigate`, `url`, `call-service`, `toggle`, and `none`.
 
 ```yaml
-section_actions:
-  pump:
-    tap_action:
-      action: toggle // [!code highlight]
+section_actions: # Optional
   temperature:
     tap_action:
-      action: more-info // [!code highlight]
+      action: more-info
+  temperature:
+    tap_action:
+      action: more-info
 ```

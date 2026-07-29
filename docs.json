@@ -13,6 +13,25 @@
     "primary": "#17817A",
     "primaryLight": "#43D1CD"
   },
+  "header": {
+    "showName": true,
+    "showThemeToggle": true,
+    "showGitHubCard": true,
+    "links": [
+      {
+        "title": "HACF Forum",
+        "href": "https://forum.hacf.fr/t/article-gestion-zen-de-sa-piscine-avec-iopool-et-home-assistant-v2/79237",
+        "cta": false
+      }
+    ]
+  },
+  "seo": {
+    "noindex": false
+  },
+  "og": {
+    "logo": "https://brands.home-assistant.io/_/iopool/icon@2x.png",
+    "github": true
+  },
   "tabs": [
     {
       "id": "root",
@@ -36,7 +55,7 @@
     }
   ],
   "sidebar": [
-    { 
+    {
       "group": "Getting Started",
       "tab": "setup",
       "pages": [
@@ -47,7 +66,7 @@
         }
       ]
     },
-    { 
+    {
       "group": "Configuration",
       "tab": "setup",
       "pages": [
@@ -83,7 +102,7 @@
         }
       ]
     },
-    { 
+    {
       "group": "Components",
       "tab": "components",
       "pages": [
@@ -129,7 +148,7 @@
         }
       ]
     },
-    { 
+    {
       "group": "Support",
       "tab": "support",
       "pages": [
