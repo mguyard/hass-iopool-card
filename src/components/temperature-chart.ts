@@ -604,7 +604,9 @@ export class IopoolTemperatureChart extends LitElement {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        border: 2px solid white;
+        /* Cut-out ring around the dot: matches the card background so it stays
+           a separator in both themes (resolves to white on a light card). */
+        border: 2px solid var(--card-background-color, #fff);
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         transform: translate(-50%, -50%);
         pointer-events: none;

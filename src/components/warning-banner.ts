@@ -48,7 +48,9 @@ export class IopoolWarningBanner extends LitElement {
         border-radius: 18px;
         background: color-mix(in srgb, var(--iopool-orange, #f5a623) 14%, transparent);
         border: 1px solid color-mix(in srgb, var(--iopool-orange, #f5a623) 24%, transparent);
-        color: color-mix(in srgb, var(--iopool-orange) 65%, black);
+        /* Mixed toward --primary-text-color so it follows the theme; 65% -> 58%
+           compensates for the lighter anchor and keeps light mode unchanged. */
+        color: color-mix(in srgb, var(--iopool-orange) 58%, var(--primary-text-color));
         font-size: 12px;
         font-weight: 600;
         line-height: 1.35;

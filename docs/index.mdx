@@ -21,9 +21,36 @@ It can show temperature, pH, and ORP gauges, pump controls, filtration mode sele
 - Filtration mode selector and boost selector
 - Daily filtration status and recommendation
 - Temperature history chart with period selector
+- Automatic light and dark appearance
 
 </Card>
 
 ## Screenshot
 
 <Image src="/assets/full-card.png" alt="iopool Card" />
+
+## Light and dark themes
+
+The card follows your Home Assistant theme automatically. There is nothing to enable and no
+option to set: switch Home Assistant to a dark theme and the card follows on the next render.
+
+It reads your theme's own colours rather than shipping a fixed light and a fixed dark palette,
+so custom themes are handled too — the card picks up their card background and text colours
+and derives its own surfaces from them.
+
+<Info>
+  The card follows the theme selected **in Home Assistant**, not your operating system's
+  appearance setting. If Home Assistant is set to a light theme while your system is in dark
+  mode, the card stays light — matching the rest of your dashboard.
+</Info>
+
+<Warning>
+  The design is only guaranteed with the **default Home Assistant theme**, in both light and
+  dark. That is the theme the card's colours are calibrated against and validated on.
+
+  With a custom theme the card still adapts and stays readable, but the result may differ from
+  the screenshots: tints shift with the theme's own background and text colours, and a theme
+  that sets an unusual card background — a transparent or image-backed one, for instance — can
+  visibly alter the gauges and inner panels. If a custom theme gives you an odd result, please
+  compare with the default theme before opening an issue.
+</Warning>
