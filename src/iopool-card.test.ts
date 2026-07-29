@@ -1105,3 +1105,113 @@ describe('IopoolCard — pump-panel events → _handleAction', () => {
     expect(spy).toHaveBeenCalledWith('filtration', 'tap');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regression tests for mguyard/hass-iopool-card#15 (ref. mguyard/hass-iopool#90):
+// the card must classify temperatures using the SAME unit as the entity's
+// current state, not assume °C. A pool at 82°F (~27.8°C, an ideal temperature)
+// must land in the green/"ok" zone, not the red/"too hot" zone.
+// ---------------------------------------------------------------------------
+
+describe('IopoolCard — temperature unit awareness', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  function mountCard(): HTMLElement & { updateComplete: Promise<boolean> } {
+    const element = document.createElement('iopool-card');
+    document.body.append(element);
+    return element as HTMLElement & { updateComplete: Promise<boolean> };
+  }
+
+  const modeId = 'sensor.iopool_test_iopool_mode';
+  const tempId = 'sensor.iopool_test_temperature';
+
+  function buildHassWithTemperature(state: string, unit: string): HomeAssistant {
+    return buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'STANDARD'),
+        [tempId]: makeHassState(tempId, state, { unit_of_measurement: unit }),
+      },
+    });
+  }
+
+  function mountWithTemperature(
+    state: string,
+    unit: string,
+  ): HTMLElement & {
+    updateComplete: Promise<boolean>;
+  } {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig(VALID_CONFIG);
+    card.hass = buildHassWithTemperature(state, unit);
+    (card as unknown as Record<string, unknown>)._entities = {
+      mode: modeId,
+      temperature: tempId,
+    };
+    return element;
+  }
+
+  it('classifies 82°F (no custom thresholds) as the ideal/"ok" zone, not "red-high"', async () => {
+    const element = mountWithTemperature('82', '°F');
+    await element.updateComplete;
+
+    const gauge = element.shadowRoot?.querySelector('iopool-liquid-gauge') as
+      | (HTMLElement & { zone?: string; unit?: string })
+      | undefined;
+    expect(gauge?.zone).toBe('ok');
+    expect(gauge?.unit).toBe('°F');
+  });
+
+  it('classifies 27.8°C (no custom thresholds) as the ideal/"ok" zone — no regression on the majority case', async () => {
+    const element = mountWithTemperature('27.8', '°C');
+    await element.updateComplete;
+
+    const gauge = element.shadowRoot?.querySelector('iopool-liquid-gauge') as
+      | (HTMLElement & { zone?: string; unit?: string })
+      | undefined;
+    expect(gauge?.zone).toBe('ok');
+    expect(gauge?.unit).toBe('°C');
+  });
+
+  it('still classifies a genuinely too-hot pool as "red-high" in °F (above the °F preset)', async () => {
+    // DEFAULT_POOL_THRESHOLDS['°F'][3] is 90 — 95°F is above it.
+    const element = mountWithTemperature('95', '°F');
+    await element.updateComplete;
+
+    const gauge = element.shadowRoot?.querySelector('iopool-liquid-gauge') as
+      | (HTMLElement & { zone?: string })
+      | undefined;
+    expect(gauge?.zone).toBe('red-high');
+  });
+
+  it('propagates the °F unit to the temperature chart', async () => {
+    const element = mountWithTemperature('82', '°F');
+    await element.updateComplete;
+
+    const chart = element.shadowRoot?.querySelector('iopool-temperature-chart') as
+      | (HTMLElement & { unit?: string })
+      | undefined;
+    expect(chart?.unit).toBe('°F');
+  });
+
+  it('falls back to °C when the temperature entity has no unit_of_measurement attribute', async () => {
+    const element = mountCard();
+    const card = element as unknown as IopoolCard;
+    card.setConfig(VALID_CONFIG);
+    card.hass = buildMockHass({
+      states: {
+        [modeId]: makeHassState(modeId, 'STANDARD'),
+        [tempId]: makeHassState(tempId, '27.8'),
+      },
+    });
+    (card as unknown as Record<string, unknown>)._entities = { mode: modeId, temperature: tempId };
+    await element.updateComplete;
+
+    const gauge = element.shadowRoot?.querySelector('iopool-liquid-gauge') as
+      | (HTMLElement & { unit?: string })
+      | undefined;
+    expect(gauge?.unit).toBe('°C');
+  });
+});

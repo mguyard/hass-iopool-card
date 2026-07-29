@@ -34,6 +34,7 @@ type TemperatureChartElement = HTMLElement & {
   period?: number;
   hass?: HomeAssistant;
   entityId?: string;
+  unit?: string;
   _hoveredPoint: { x: number; y: number } | null;
   _hoveredDotPos: { x: number; y: number } | null;
   _seriesData: { x: number; y: number }[];
@@ -288,6 +289,103 @@ describe('iopool-temperature-chart', () => {
     expect(vi.mocked(fetchTemperatureHistory).mock.calls.length).toBeGreaterThan(callsBefore);
     const lastCall = vi.mocked(fetchTemperatureHistory).mock.lastCall;
     expect(lastCall?.[2]).toBe(24);
+  });
+
+  // ─── Temperature unit (mguyard/hass-iopool-card#15) ──────────────────────────
+
+  it('shows the °F unit in the header and in all 3 stats when unit="°F"', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const hass = createHass({
+      states: {
+        'sensor.pool_temp': {
+          entity_id: 'sensor.pool_temp',
+          state: '82',
+          attributes: {},
+          last_changed: new Date().toISOString(),
+          last_updated: new Date().toISOString(),
+        },
+      },
+    });
+    const element = createElement({ hass, entityId: 'sensor.pool_temp', unit: '°F' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    const text = element.shadowRoot?.textContent ?? '';
+    // Header current-temperature unit + min/avg/max stats: 4 occurrences total.
+    expect(text.match(/°F/g)?.length).toBe(4);
+    expect(text).not.toContain('°C');
+  });
+
+  it('defaults to the °C unit when the unit property is not set', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({ hass: createHass(), entityId: 'sensor.pool_temp' });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.textContent).toContain('°C');
+  });
+
+  it('scales the Y-axis padding by the degree size of the unit (0.5 in °C, 0.9 in °F)', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+
+    const celsiusElement = createElement({
+      hass: createHass(),
+      entityId: 'sensor.pool_temp_c',
+      unit: '°C',
+    });
+    await celsiusElement.updateComplete;
+    await flushAsync();
+    await celsiusElement.updateComplete;
+    const celsiusInstance = vi.mocked(ApexCharts).mock.results[0]?.value as MockInstance;
+    const celsiusOpts = celsiusInstance.updateOptions.mock.calls.at(-1)?.[0] as {
+      yaxis: { min: number; max: number };
+    };
+
+    vi.mocked(ApexCharts).mockClear();
+
+    const fahrenheitElement = createElement({
+      hass: createHass(),
+      entityId: 'sensor.pool_temp_f',
+      unit: '°F',
+    });
+    await fahrenheitElement.updateComplete;
+    await flushAsync();
+    await fahrenheitElement.updateComplete;
+    const fahrenheitInstance = vi.mocked(ApexCharts).mock.results[0]?.value as MockInstance;
+    const fahrenheitOpts = fahrenheitInstance.updateOptions.mock.calls.at(-1)?.[0] as {
+      yaxis: { min: number; max: number };
+    };
+
+    // Same underlying data (makeMockData: min 24.0, max 26.8) in both cases.
+    // °C padding is 0.5; °F padding is 0.5 * 1.8 = 0.9 (same min/max values, only
+    // the padding differs — the chart does not convert the data itself).
+    const celsiusPad = 24.0 - celsiusOpts.yaxis.min;
+    const fahrenheitPad = 24.0 - fahrenheitOpts.yaxis.min;
+    expect(celsiusPad).toBeCloseTo(0.5, 5);
+    expect(fahrenheitPad).toBeCloseTo(0.9, 5);
+  });
+
+  it('reloads data when the unit property changes (per-entity override toggled live)', async () => {
+    vi.mocked(fetchTemperatureHistory).mockResolvedValue(makeMockData());
+    const element = createElement({
+      hass: createHass(),
+      entityId: 'sensor.pool_temp',
+      unit: '°C',
+    });
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    const callsBefore = vi.mocked(fetchTemperatureHistory).mock.calls.length;
+
+    element.unit = '°F';
+    await element.updateComplete;
+    await flushAsync();
+    await element.updateComplete;
+
+    expect(vi.mocked(fetchTemperatureHistory).mock.calls.length).toBeGreaterThan(callsBefore);
   });
 
   it('renders the ApexCharts container when data is returned', async () => {
