@@ -39,6 +39,13 @@ describe('iopool-liquid-gauge', () => {
     expect(element.shadowRoot?.textContent).toContain('°C');
   });
 
+  it('renders °F just as readily — the component itself has no unit assumption', async () => {
+    const element = createGauge({ unit: '°F', value: 82 });
+    await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;
+
+    expect(element.shadowRoot?.textContent).toContain('°F');
+  });
+
   it('renders target info when provided', async () => {
     const element = createGauge({ target: 27, targetLabel: 'CIBLE 27°C' });
     await (element as HTMLElement & { updateComplete: Promise<boolean> }).updateComplete;

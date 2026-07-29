@@ -155,29 +155,39 @@ export class IopoolHeader extends LitElement {
         flex: 0 0 auto;
       }
 
+      /* Raw --iopool-primary is a dark teal: readable on a light surface (4.30:1)
+         but not on a dark one (3.17:1). Mixing it toward --primary-text-color
+         pushes it away from the backdrop in both directions — deeper on light,
+         lighter on dark. 75% is the least that clears AA on the dark side
+         (4.51:1); it also lifts light to 5.89:1, at the cost of a visibly
+         deeper teal there. */
       .iopool-header__badge--mode {
         background: var(--iopool-surface-strong);
-        color: var(--iopool-primary, #17817a);
+        color: color-mix(in srgb, var(--iopool-primary, #17817a) 75%, var(--primary-text-color));
       }
 
+      /* Same theme-following anchor as the gauge status pills: mixed toward
+         --primary-text-color, ratios recalibrated (60/65/75 -> 52/58/69) to
+         preserve the light-mode luminance. */
       .iopool-header__badge--ok {
         background: color-mix(in srgb, var(--iopool-green, #7ed321) 16%, transparent);
-        color: color-mix(in srgb, var(--iopool-green) 60%, black);
+        color: color-mix(in srgb, var(--iopool-green) 52%, var(--primary-text-color));
       }
 
       .iopool-header__badge--warn {
         background: color-mix(in srgb, var(--iopool-orange, #f5a623) 18%, transparent);
-        color: color-mix(in srgb, var(--iopool-orange) 65%, black);
+        color: color-mix(in srgb, var(--iopool-orange) 58%, var(--primary-text-color));
       }
 
       .iopool-header__badge--err {
         background: color-mix(in srgb, var(--iopool-red, #d0021b) 13%, transparent);
-        color: color-mix(in srgb, var(--iopool-red) 75%, black);
+        color: color-mix(in srgb, var(--iopool-red) 69%, var(--primary-text-color));
       }
 
       .iopool-header__badge--debug {
         background: color-mix(in srgb, var(--iopool-primary, #17817a) 10%, transparent);
-        color: var(--iopool-primary, #17817a);
+        /* Same anchor as --mode: 3.25:1 -> 4.64:1 on a dark card. */
+        color: color-mix(in srgb, var(--iopool-primary, #17817a) 75%, var(--primary-text-color));
         border: 1px solid color-mix(in srgb, var(--iopool-primary, #17817a) 18%, transparent);
       }
     `,

@@ -29,10 +29,24 @@ export const sharedStyles = css`
     --iopool-neutral: #94a39e;
     --iopool-grad-button: linear-gradient(135deg, #51afe7 0%, #62d2c6 100%);
     --iopool-grad-main: linear-gradient(180deg, #42bdaa 0%, #2c7c70 100%);
-    --iopool-gauge-bg: #eaf4f2;
-    --iopool-gauge-bg-dark: #1a2625;
-    --iopool-surface: rgba(23, 129, 122, 0.04);
-    --iopool-surface-strong: rgba(23, 129, 122, 0.08);
+    /* Derived from the theme card background so it follows light/dark without
+       any mode detection: white -> rgb(234,244,243) (the former #eaf4f2),
+       #1c1c1c -> #1c2524. See SPECIFICATIONS §7.7. */
+    --iopool-gauge-bg: color-mix(in srgb, var(--iopool-primary) 9%, var(--card-background-color));
+    /* Anchored on --primary-text-color, which always moves *away* from the
+       background: it darkens a light card and lightens a dark one. Ratios are
+       solved so the light-mode luminance matches the former teal overlays
+       exactly, while dark-mode separation gains ~60%. See SPECIFICATIONS §7.7. */
+    --iopool-surface: color-mix(
+      in srgb,
+      var(--primary-text-color) 2.6%,
+      var(--card-background-color)
+    );
+    --iopool-surface-strong: color-mix(
+      in srgb,
+      var(--primary-text-color) 5.3%,
+      var(--card-background-color)
+    );
     --iopool-divider: rgba(23, 129, 122, 0.12);
 
     display: block;
@@ -42,7 +56,9 @@ export const sharedStyles = css`
   ha-card {
     border-radius: var(--ha-card-border-radius, 28px);
     overflow: hidden;
-    background: var(--card-background-color);
+    /* HA gives --ha-card-background priority over --card-background-color for
+       cards; themes that only set the former would otherwise mismatch. */
+    background: var(--ha-card-background, var(--card-background-color));
   }
 
   /* === Card root container === */

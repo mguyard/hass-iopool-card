@@ -11,11 +11,67 @@ Temperature thresholds define the four transition values that create the five ga
 red-low, yellow-low, green, yellow-high, and red-high.
 
 ```yaml
-temperature_thresholds: [15, 20, 29, 32] // [!code highlight]
+type: custom:iopool-card
+device_id: 0a1b2c... # Required
+pump_entity: switch.pool_pump # Optional
+show_chart: true # Optional, default true
+chart_period: 96 # Optional: 24|48|96|168
+temperature_thresholds: [15, 20, 29, 32] # Optional // [!code focus]
+debug: false # Optional, YAML-only
+section_actions: # Optional
+  temperature:
+    tap_action:
+      action: more-info
 ```
 
-The default pool preset is `[15, 20.5, 29, 32]`. A spa-friendly preset commonly uses `[35, 37, 39, 40]`.
+<Info>
+  Thresholds are expressed in **the same unit as your temperature entity's current display unit** —
+  °C, °F, or K. The card reads this from Home Assistant (`unit_of_measurement`, honoring any
+  per-entity override you've set under *Settings → Entities → Unit of measurement*, falling back to
+  your system-wide unit system). There is no separate setting to choose the unit for thresholds:
+  whatever unit the gauge and chart currently display is the unit you enter here, in the editor and
+  in YAML alike.
+</Info>
+
+### Default presets
+
+| Preset | °C                   | °F                  | K                        |
+| ------ | -------------------- | ------------------- | ------------------------ |
+| Pool   | `[15, 20.5, 29, 32]` | `[59, 69, 84, 90]`  | `[288, 293.5, 302, 305]` |
+| Spa    | `[28, 32, 36, 38]`   | `[82, 90, 97, 100]` | `[301, 305, 309, 311]`   |
+
+Clicking **Pool** or **Spa** in the editor applies the preset for your entity's current
+display unit. The °F and K values above are the rounded equivalents of the °C preset,
+not exact conversions — a fraction of a degree makes no practical difference to pool
+classification.
+
+### Allowed input range
+
+| Unit | Min | Max | Step |
+| ---- | --- | --- | ---- |
+| °C   | -20 | 50  | 0.5  |
+| °F   | -4  | 122 | 1    |
+| K    | 253 | 323 | 0.5  |
 
 <Info>Only temperature thresholds can be customized.</Info>
 
 Keep the values strictly increasing. If two adjacent values are equal or out of order, the editor rejects the change.
+
+<Info>
+  **Changing units after customizing thresholds.** If you've entered custom thresholds and later
+  change your entity's display unit (or your Home Assistant unit system), the stored values are
+  *not* converted — they'll be re-read in the new unit. For example, thresholds saved as `[15, 20.5,
+  29, 32]` in °C would be misread as `15–32 °F` if you later switch to Fahrenheit. This is visible
+  (the editor shows the unit next to each field) and easy to fix: click **Pool** or **Spa** again to
+  reset to a correct preset, or re-enter your custom values in the new unit. This is a known,
+  accepted limitation — there is no automatic migration.
+</Info>
+
+### Known limitation: mixed-unit chart history
+
+The temperature chart reads history directly from Home Assistant's recorder, which
+stores each point in whatever unit was active when it was recorded. If you change
+your display unit, older points on the chart stay in the previous unit and will
+appear alongside newer ones in the new unit, on the same axis. This is transient —
+it resolves itself once the older points age out of your recorder's retention
+period (10 days by default) — and is not something this card attempts to correct.

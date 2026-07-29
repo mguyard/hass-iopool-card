@@ -10,8 +10,17 @@ nextTitle: Actions
 The temperature chart is enabled by default and can be disabled with `show_chart: false`.
 
 ```yaml
-show_chart: true // [!code highlight]
-chart_period: 96 // [!code highlight]
+type: custom:iopool-card
+device_id: 0a1b2c... # Required
+pump_entity: switch.pool_pump # Optional
+show_chart: true # Optional, default true // [!code focus]
+chart_period: 96 # Optional: 24|48|96|168 // [!code focus]
+temperature_thresholds: [15, 20, 29, 32] # Optional
+debug: false # Optional, YAML-only
+section_actions: # Optional
+  temperature:
+    tap_action:
+      action: more-info
 ```
 
 The period selector supports four values: `24` for 24h, `48` for 2d, `96` for 4d, and `168` for 7d.

@@ -1,3 +1,4 @@
+import type { TempUnit } from './helpers/temperature';
 import type { EntityMapEntry, EntityMapKey, TemperatureThresholds } from './types';
 
 // IMPORTANT: CARD_VERSION is replaced at build time by Rollup @rollup/plugin-replace
@@ -5,10 +6,21 @@ export const CARD_VERSION: string = '__CARD_VERSION__';
 export const CARD_TYPE = 'iopool-card';
 export const CARD_NAME = 'iopool Card';
 
-// Default temperature thresholds [t0, t1, t2, t3] — pool preset (SPECIFICATIONS §6.3.1)
-export const DEFAULT_POOL_THRESHOLDS: TemperatureThresholds = [15, 20.5, 29, 32];
+// Default temperature thresholds [t0, t1, t2, t3] per display unit — pool preset
+// (SPECIFICATIONS §6.3.1). °F and K values are hardcoded and rounded rather than
+// converted at runtime: an exact conversion (e.g. 20.5°C → 68.9°F) reads poorly in
+// a config field and has no meaningful effect on pool classification.
+export const DEFAULT_POOL_THRESHOLDS: Record<TempUnit, TemperatureThresholds> = {
+  '°C': [15, 20.5, 29, 32],
+  '°F': [59, 69, 84, 90],
+  K: [288, 293.5, 302, 305],
+};
 // Spa preset — higher comfort range
-export const DEFAULT_SPA_THRESHOLDS: TemperatureThresholds = [28, 32, 36, 38];
+export const DEFAULT_SPA_THRESHOLDS: Record<TempUnit, TemperatureThresholds> = {
+  '°C': [28, 32, 36, 38],
+  '°F': [82, 90, 97, 100],
+  K: [301, 305, 309, 311],
+};
 
 // Fixed pH thresholds [t0, t1, t2, t3] — not customizable in v1 (SPECIFICATIONS §6.3.1)
 export const PH_THRESHOLDS: TemperatureThresholds = [6.8, 7.1, 7.7, 8.1];

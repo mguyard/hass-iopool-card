@@ -10,7 +10,17 @@ nextTitle: Thresholds
 The pump is optional and must be configured as a Home Assistant switch entity.
 
 ```yaml
-pump_entity: switch.pool_pump // [!code highlight]
+type: custom:iopool-card
+device_id: 0a1b2c... # Required
+pump_entity: switch.pool_pump # Optional // [!code focus]
+show_chart: true # Optional, default true
+chart_period: 96 # Optional: 24|48|96|168
+temperature_thresholds: [15, 20, 29, 32] # Optional
+debug: false # Optional, YAML-only
+section_actions: # Optional
+  temperature:
+    tap_action:
+      action: more-info
 ```
 
 <Warning>

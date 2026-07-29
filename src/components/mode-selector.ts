@@ -180,9 +180,15 @@ export class IopoolModeSelector extends LitElement {
         outline-offset: 2px;
       }
 
+      /* Fixed ink, deliberately not --primary-text-color: the pill background is
+         a brand colour that does not follow the theme, so its ink must not
+         either (the theme anchor would turn white in dark and collapse to
+         1.9:1). --iopool-green is a light colour at 0.51 relative luminance, so
+         white text on it cannot reach AA at any tuning — 1.87:1 is its ceiling.
+         Dark ink gives 9.30:1. Same rule on .pump-panel__boost-btn--active. */
       .mode-selector__button--active {
         background: var(--iopool-green, #7ed321);
-        color: #fff;
+        color: #1a1a1a;
         box-shadow: 0 2px 8px rgba(126, 211, 33, 0.3);
       }
 
